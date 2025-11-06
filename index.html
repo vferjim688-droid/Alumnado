@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
     <title>AulaIA - Llave de Acceso</title>
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -118,11 +118,11 @@
         </div>
         
         <!-- ============================================= -->
-        <!-- VISTA DE PROFESOR (CREAR AULA) -->
+        <!-- VISTA DE PROFESOR (CREAR / EDITAR AULA) -->
         <!-- ============================================= -->
         <div id="teacher-create-view" class="view bg-white p-6 shadow-lg rounded-lg max-w-3xl mx-auto">
             <button id="back-to-hub-btn" class="mb-4 text-sm text-blue-600 hover:underline">&larr; Volver al Centro de Aulas</button>
-            <h2 class="text-2xl font-bold mb-4 border-b pb-2 text-blue-700">Crear Nueva Aula</h2>
+            <h2 id="create-view-title" class="text-2xl font-bold mb-4 border-b pb-2 text-blue-700">Crear Nueva Aula</h2>
             <form id="create-classroom-form" class="space-y-4">
                 <div>
                     <label for="classroom-name" class="block text-sm font-medium text-gray-700 mb-1">Nombre del Aula / Tema</label>
@@ -145,7 +145,7 @@
                     <textarea id="classroom-rubric" rows="4" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Define aquí los criterios de evaluación... (Ej: Resumen 3/10, Coherencia 2/10...)"></textarea>
                 </div>
 
-                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition">
+                <button id="create-view-submit-btn" type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition">
                     Guardar Aula
                 </button>
             </form>
@@ -193,6 +193,22 @@
         </div>
     </div>
 
+    <!-- Confirmation Modal (Para Borrar) -->
+    <div id="confirm-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+            <h3 id="confirm-title" class="text-xl font-bold mb-4"></h3>
+            <p id="confirm-body"></p>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button id="confirm-cancel-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition">
+                    Cancelar
+                </button>
+                <button id="confirm-action-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition">
+                    Confirmar Borrado
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- ============================================= -->
     <!-- SCRIPTS -->
@@ -215,7 +231,9 @@
             onSnapshot, 
             collection, 
             query,
-            serverTimestamp 
+            serverTimestamp,
+            deleteDoc,
+            updateDoc 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- INICIO: Configuración de la Aplicación ---
@@ -223,7 +241,7 @@
         const RESUMEN_APP_URL = "https://vferjim688-droid.github.io/actividad-paso-a-paso/"; 
         
         // Pega aquí la URL de tu aplicación "actividad-resumen" (Alumno)
-        const ACTIVIDAD_APP_URL = "https://vferjim688-droid.github.io/Actividad-de-Resumen/"; // <-- ¡REVISA SI ESTA ES CORRECTA!
+        const ACTIVIDAD_APP_URL = "https://vferjim688-droid.github.io/actividad-resumen/"; // <-- ¡REVISA SI ESTA ES CORRECTA!
 
         // --- INICIO: Configuración de Firebase ---
         // Para probar en GitHub Pages, crea tu propio proyecto de Firebase
@@ -233,7 +251,7 @@
             apiKey: "AIzaSyCrZRRrK2pV8-qgbv4SkutKE2LSQFPJE-Q",
             authDomain: "aulaia-393c0.firebaseapp.com",
             projectId: "aulaia-393c0",
-            storageBucket: "aulaia-393c0.firebasestorage.app", // Corregí 'firebasestorage.app' a 'appspot.com' si da error, aunque 'firebasestorage.app' es el nuevo formato
+            storageBucket: "aulaia-393c0.appspot.com", // Usar .appspot.com es más seguro que .firebasestorage.app
             messagingSenderId: "485029010497",
             appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
         };
@@ -273,6 +291,8 @@
         let userId = null;
         let currentRole = null;
         let unsubscribeClassrooms = () => {};
+        let currentEditingClassroomId = null; // Para saber si estamos editando
+        let classroomToDeleteId = null; // Para el modal de borrado
 
         // Selectores de UI
         const views = {
@@ -287,6 +307,11 @@
         const messageTitle = document.getElementById('message-title');
         const messageBody = document.getElementById('message-body');
         const messageCloseBtn = document.getElementById('message-close-btn');
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmTitle = document.getElementById('confirm-title');
+        const confirmBody = document.getElementById('confirm-body');
+        const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+        const confirmActionBtn = document.getElementById('confirm-action-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const roleDisplay = document.getElementById('role-display');
 
@@ -318,6 +343,31 @@
 
         messageCloseBtn.addEventListener('click', () => {
             messageModal.classList.add('hidden');
+        });
+
+        // Listeners del Modal de Confirmación
+        confirmCancelBtn.addEventListener('click', () => {
+            confirmModal.classList.add('hidden');
+            classroomToDeleteId = null;
+        });
+
+        confirmActionBtn.addEventListener('click', async () => {
+            if (!classroomToDeleteId) return;
+
+            showLoader(true);
+            confirmModal.classList.add('hidden');
+            
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToDeleteId);
+                await deleteDoc(docRef);
+                showMessage("¡Éxito!", "El aula ha sido borrada permanentemente.");
+            } catch (error) {
+                console.error("Error borrando aula:", error);
+                showMessage("Error", `No se pudo borrar el aula: ${error.message}`);
+            } finally {
+                classroomToDeleteId = null;
+                showLoader(false);
+            }
         });
 
         // --- LÓGICA DE AUTENTICACIÓN Y ROLES ---
@@ -370,6 +420,11 @@
                 views.teacherCreate.style.display = 'none';
                 views.authLoading.style.display = 'none';
                 loadTeacherClassrooms();
+                // Adjuntar el listener de la lista de aulas UNA SOLA VEZ
+                if (!teacherClassroomsList.dataset.listenerAttached) {
+                    teacherClassroomsList.addEventListener('click', handleTeacherListClick);
+                    teacherClassroomsList.dataset.listenerAttached = 'true';
+                }
             } else {
                 roleDisplay.textContent = 'Alumno';
                 roleDisplay.className = 'font-semibold text-lg text-green-700';
@@ -386,10 +441,19 @@
 
         // Botones de navegación del profesor
         document.getElementById('show-create-classroom-btn').addEventListener('click', () => {
-            showView('teacherCreate');
+            // Asegurarse de que el formulario está en modo "Crear"
+            currentEditingClassroomId = null;
             createClassroomForm.reset();
+            document.getElementById('create-view-title').textContent = 'Crear Nueva Aula';
+            document.getElementById('create-view-submit-btn').textContent = 'Guardar Aula';
+            showView('teacherCreate');
         });
         document.getElementById('back-to-hub-btn').addEventListener('click', () => {
+            // Limpiar estado de edición al volver
+            currentEditingClassroomId = null;
+            createClassroomForm.reset();
+            document.getElementById('create-view-title').textContent = 'Crear Nueva Aula';
+            document.getElementById('create-view-submit-btn').textContent = 'Guardar Aula';
             setRole('teacher'); // Re-llamar a setRole para asegurar el estado correcto de la vista
         });
 
@@ -409,39 +473,34 @@
                     const classroom = doc.data();
                     const classroomId = doc.id; // Capturamos el ID del documento
                     const classroomEl = document.createElement('div');
-                    classroomEl.className = 'p-4 border rounded-lg hover:bg-gray-50 transition cursor-pointer';
+                    classroomEl.className = 'p-4 border rounded-lg';
+                    
+                    // Contenido del aula con botones de acción
                     classroomEl.innerHTML = `
-                        <h4 class="font-semibold text-lg">${classroom.name}</h4>
-                        <p class="text-sm text-gray-600">${(classroom.sourceText || '').substring(0, 100)}...</p>
-                        <span class="text-xs text-blue-500 font-medium">${classroom.studentList?.length || 0} alumnos</span>
+                        <div class="flex justify-between items-center">
+                            <!-- Información del Aula -->
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-semibold text-lg text-blue-600 hover:underline cursor-pointer truncate" data-action="redirect" data-id="${classroomId}" data-name="${classroom.name}" title="${classroom.name}">
+                                    ${classroom.name}
+                                </h4>
+                                <p class="text-sm text-gray-600 truncate">${(classroom.sourceText || '').substring(0, 100)}...</p>
+                                <span class="text-xs text-blue-500 font-medium">${classroom.studentList?.length || 0} alumnos</span>
+                            </div>
+                            <!-- Botones de Acción -->
+                            <div class="space-x-2 flex-shrink-0 ml-4">
+                                <button class="edit-btn p-2 rounded-lg hover:bg-yellow-100 text-yellow-600" data-action="edit" data-id="${classroomId}" title="Editar Aula">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                                    </svg>
+                                </button>
+                                <button class="delete-btn p-2 rounded-lg hover:bg-red-100 text-red-600" data-action="delete" data-id="${classroomId}" data-name="${classroom.name}" title="Borrar Aula">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.54 0c-.342.052-.682.107-1.022.166m11.022 0L12 5.281m-2.217.488L12 5.281m0 0L9.783 5.79m2.217 0 2.217.488m0 0a.562.562 0 0 1 .562.562v1.5c0 .31-.252.562-.562.562h-2.217a.562.562 0 0 1-.562-.562v-1.5c0-.31.252-.562.562.562Zm0 0h-2.217" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     `;
-                    // Esta acción es para el futuro, como se especificó
-                    classroomEl.addEventListener('click', () => {
-                        // ¡ACCIÓN MODIFICADA!
-                        // Redirigir a la aplicación de resumen, pasando el ID del aula
-                        
-                        if (!RESUMEN_APP_URL || RESUMEN_APP_URL.includes("ES_LA_URL_DE_TU_OTRA_APP")) {
-                             showMessage(
-                                "Configuración Requerida", 
-                                "La URL de la aplicación 'resumen-paso-a-paso' aún no se ha configurado en el script (variable RESUMEN_APP_URL)."
-                            );
-                            return;
-                        }
-
-                        // Construir la URL con el ID del aula como parámetro
-                        const url = `${RESUMEN_APP_URL}?aulaId=${classroomId}`;
-                        
-                        // Informar al usuario y redirigir
-                        showMessage(
-                            "Cargando Aula...", 
-                            `Redirigiendo a la aplicación de resumen para el aula: ${classroom.name}.`
-                        );
-                        
-                        // Esperar un momento para que el usuario lea el mensaje
-                        setTimeout(() => {
-                            window.location.href = url;
-                        }, 1500);
-                    });
                     teacherClassroomsList.appendChild(classroomEl);
                 });
             }, (error) => {
@@ -450,7 +509,80 @@
             });
         }
 
-        // Submit del formulario de crear aula
+        // --- Manejadores de Clics para la Lista de Aulas (Delegación de Eventos) ---
+        async function handleTeacherListClick(e) {
+            const redirectTarget = e.target.closest('[data-action="redirect"]');
+            const editTarget = e.target.closest('[data-action="edit"]');
+            const deleteTarget = e.target.closest('[data-action="delete"]');
+
+            if (redirectTarget) {
+                // --- ACCIÓN: Redirigir ---
+                const classroomId = redirectTarget.dataset.id;
+                const classroomName = redirectTarget.dataset.name;
+
+                if (!RESUMEN_APP_URL || RESUMEN_APP_URL.includes("ES_LA_URL_DE_TU_OTRA_APP")) {
+                    showMessage(
+                       "Configuración Requerida", 
+                       "La URL de la aplicación 'resumen-paso-a-paso' aún no se ha configurado en el script (variable RESUMEN_APP_URL)."
+                   );
+                   return;
+               }
+               const url = `${RESUMEN_APP_URL}?aulaId=${classroomId}`;
+               showMessage(
+                   "Cargando Aula...", 
+                   `Redirigiendo a la aplicación de resumen para el aula: ${classroomName}.`
+               );
+               setTimeout(() => { window.location.href = url; }, 1500);
+            
+            } else if (editTarget) {
+                // --- ACCIÓN: Editar ---
+                const classroomId = editTarget.dataset.id;
+                showLoader(true);
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const classroom = docSnap.data();
+                        
+                        // Marcar que estamos editando
+                        currentEditingClassroomId = classroomId;
+                        
+                        // Rellenar el formulario
+                        document.getElementById('classroom-name').value = classroom.name || '';
+                        document.getElementById('classroom-students').value = (classroom.studentList || []).join('\n');
+                        document.getElementById('classroom-text').value = classroom.sourceText || '';
+                        document.getElementById('classroom-rubric').value = classroom.rubric || '';
+                        
+                        // Cambiar UI del formulario a modo "Editar"
+                        document.getElementById('create-view-title').textContent = 'Editar Aula';
+                        document.getElementById('create-view-submit-btn').textContent = 'Actualizar Aula';
+                        
+                        showView('teacherCreate');
+                    } else {
+                        throw new Error("El aula no fue encontrada.");
+                    }
+                } catch (error) {
+                    console.error("Error al cargar aula para editar:", error);
+                    showMessage("Error", "No se pudo cargar la información del aula para editar.");
+                } finally {
+                    showLoader(false);
+                }
+
+            } else if (deleteTarget) {
+                // --- ACCIÓN: Borrar ---
+                const classroomId = deleteTarget.dataset.id;
+                const classroomName = deleteTarget.dataset.name;
+                
+                // Usar la variable global para el modal
+                classroomToDeleteId = classroomId;
+                confirmTitle.textContent = 'Confirmar Borrado';
+                confirmBody.textContent = `¿Estás seguro de que quieres borrar el aula "${classroomName}"? Esta acción no se puede deshacer.`;
+                confirmModal.classList.remove('hidden');
+            }
+        }
+
+
+        // Submit del formulario de crear aula (¡Ahora también actualiza!)
         createClassroomForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('classroom-name').value;
@@ -476,26 +608,44 @@
 
             showLoader(true);
             try {
-                // Guardar la nueva aula en Firestore
-                const classroomsCollection = collection(db, `artifacts/${appId}/public/data/classrooms`);
-                await addDoc(classroomsCollection, {
-                    name: name,
-                    studentList: studentList,
-                    sourceText: sourceText,
-                    rubric: rubric, // Opcional
-                    teacherId: userId,
-                    createdAt: serverTimestamp()
-                });
+                if (currentEditingClassroomId) {
+                    // --- MODO ACTUALIZAR ---
+                    const docRef = doc(db, `artifacts/${appId}/public/data/classrooms`, currentEditingClassroomId);
+                    await updateDoc(docRef, {
+                        name: name,
+                        studentList: studentList,
+                        sourceText: sourceText,
+                        rubric: rubric
+                        // No actualizamos createdAt, solo modificamos los datos
+                    });
+                    showMessage("¡Éxito!", `El aula "${name}" ha sido actualizada.`);
 
-                showMessage("¡Éxito!", `El aula "${name}" ha sido creada.`);
-                createClassroomForm.reset();
-                setRole('teacher'); // Volver al hub (usando setRole)
+                } else {
+                    // --- MODO CREAR ---
+                    const classroomsCollection = collection(db, `artifacts/${appId}/public/data/classrooms`);
+                    await addDoc(classroomsCollection, {
+                        name: name,
+                        studentList: studentList,
+                        sourceText: sourceText,
+                        rubric: rubric, // Opcional
+                        teacherId: userId,
+                        createdAt: serverTimestamp()
+                    });
+                    showMessage("¡Éxito!", `El aula "${name}" ha sido creada.`);
+                }
+                
+                setRole('teacher'); // Volver al hub
 
             } catch (error) {
-                console.error("Error creando aula:", error);
-                showMessage("Error de Base de Datos", `No se pudo crear el aula: ${error.message}`);
+                console.error("Error guardando aula:", error);
+                showMessage("Error de Base de Datos", `No se pudo guardar el aula: ${error.message}`);
             } finally {
                 showLoader(false);
+                // Resetear el formulario y el estado de edición
+                currentEditingClassroomId = null;
+                createClassroomForm.reset();
+                document.getElementById('create-view-title').textContent = 'Crear Nueva Aula';
+                document.getElementById('create-view-submit-btn').textContent = 'Guardar Aula';
             }
         });
 
@@ -531,7 +681,7 @@
             });
         }
 
-        // Login del alumno
+        // Login del alumno (LÓGICA CORREGIDA)
         studentLoginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const classroomId = studentClassroomSelect.value;
@@ -544,65 +694,63 @@
 
             showLoader(true);
             try {
-                // 1. Obtener el documento del aula seleccionada
-                const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
-                const classroomDoc = await getDoc(classroomRef);
+                // 1. Obtener el aula seleccionada
+                const docRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
+                const docSnap = await getDoc(docRef);
 
-                if (!classroomDoc.exists()) {
-                    throw new Error("El aula seleccionada no existe.");
-                }
-
-                const classroom = classroomDoc.data();
-                
-                // 2. Validar si el nick está en la lista de alumnos de esa aula
-                if (classroom.studentList && classroom.studentList.includes(nick)) {
-                    // ¡Acceso concedido!
-                    // Redirigir a la aplicación de actividad del alumno
+                if (docSnap.exists()) {
+                    const classroom = docSnap.data();
+                    const studentList = classroom.studentList || [];
                     
-                    if (!ACTIVIDAD_APP_URL || ACTIVIDAD_APP_URL.includes("ES_LA_URL_DE_TU_OTRA_APP")) {
-                         showMessage(
-                            "Configuración Requerida", 
-                            "La URL de la aplicación 'actividad-resumen' aún no se ha configurado en el script (variable ACTIVIDAD_APP_URL)."
+                    // 2. Comprobar si el nick está en la lista (mejorando la comprobación, insensible a may/min)
+                    const normalizedNick = nick.toLowerCase();
+                    const normalizedStudentList = studentList.map(s => s.toLowerCase());
+
+                    if (normalizedStudentList.includes(normalizedNick)) {
+                        // ¡Éxito! Redirigir
+                        // Encontrar el nick original para pasarlo en la URL
+                        const originalNick = studentList.find(s => s.toLowerCase() === normalizedNick); 
+                        
+                        if (!ACTIVIDAD_APP_URL || ACTIVIDAD_APP_URL.includes("ES_LA_URL_DE_TU_OTRA_APP")) {
+                             showMessage(
+                                "Configuración Requerida", 
+                                "La URL de la aplicación 'actividad-resumen' (Alumno) aún no se ha configurado en el script (variable ACTIVIDAD_APP_URL)."
+                            );
+                            showLoader(false); // Detener el loader aquí
+                            return;
+                        }
+                        
+                        const url = `${ACTIVIDAD_APP_URL}?aulaId=${classroomId}&nick=${encodeURIComponent(originalNick)}`;
+                        showMessage(
+                            "¡Acceso Concedido!", 
+                            `Bienvenido, ${originalNick}. Cargando la actividad...`
                         );
-                        return;
+                        setTimeout(() => { window.location.href = url; }, 1500);
+
+                    } else {
+                        // Error: Nick no encontrado
+                        showMessage("Acceso Denegado", "Tu IDEA/Nick no se encuentra en la lista de esta aula. Revisa si lo has escrito bien o contacta a tu profesor.");
                     }
-
-                    // Construir la URL con el ID del aula y el nick del alumno
-                    const url = `${ACTIVIDAD_APP_URL}?aulaId=${classroomId}&nick=${encodeURIComponent(nick)}`;
-
-                    showMessage(
-                        "Acceso Concedido",
-                        `¡Bienvenido, ${nick}! Cargando tu lección...`
-                    );
-                    
-                    // Esperar un momento para que el usuario lea el mensaje
-                    setTimeout(() => {
-                        window.location.href = url;
-                    }, 1500);
-
                 } else {
-                    // Acceso denegado
-                    showMessage(
-                        "Acceso Denegado",
-                        "Tu IDEA o Nick no se encuentra en la lista de esta aula. Contacta con tu profesor."
-                    );
+                    // Error: Aula no encontrada
+                    showMessage("Error", "El aula seleccionada ya no existe. Por favor, recarga la página.");
                 }
 
             } catch (error) {
                 console.error("Error en login de alumno:", error);
-                showMessage("Error", "No se pudo verificar tu acceso. Inténtalo de nuevo.");
+                showMessage("Error de Conexión", `Ha ocurrido un error: ${error.message}`);
             } finally {
-                showLoader(false);
+                // Solo ocultar el loader si no estamos redirigiendo
+                if (!window.location.href.startsWith(ACTIVIDAD_APP_URL)) {
+                    showLoader(false);
+                }
             }
         });
 
 
-        // --- INICIO DE LA APP ---
-        // Solo inicia la app si Firebase se inicializó correctamente
-        if (auth) {
-            showView('authLoading');
-        }
-    
+        // --- INICIALIZACIÓN ---
+        showView('authLoading'); // Mostrar "Conectando..." al principio
+
     </script>
 </body>
 </html>
