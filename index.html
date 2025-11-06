@@ -3,253 +3,511 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Actividad: Pensamiento Computacional</title>
+    <title>AulaIA - Llave de Acceso</title>
+    <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Carga de la fuente Inter -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f4f7f9;
         }
-        .prose-custom p, .prose-custom li { margin-bottom: 1em; }
-        .prose-custom h1, .prose-custom h2, .prose-custom h3, .prose-custom h4 { margin-bottom: 0.5em; }
-        .feedback-card, .progress-bar-inner {
-            transition: all 0.5s ease-in-out;
+        /* Ocultar vistas por defecto */
+        .view {
+            display: none;
         }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+        /* Estilos para el loader */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        #loader.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            border-top: 4px solid #ffffff;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Clases de utilidad para botones deshabilitados */
-        .disabled-btn {
-            background-color: #9ca3af; /* gray-400 */
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-        .disabled-btn:hover {
-            background-color: #9ca3af;
-        }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 p-4 md:p-8">
+<body class="bg-gray-100 text-gray-800">
 
-    <div class="max-w-6xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden">
+    <!-- Contenedor principal de la aplicación -->
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-6xl">
         
-        <!-- Encabezado y Selector de Sección -->
-        <header class="p-6 md:p-8 border-b border-gray-200 bg-gray-50">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Actividad de Resumen: Pensamiento Computacional</h1>
-            <div class="flex flex-col md:flex-row md:items-center gap-4">
-                <label for="section-selector" class="text-lg font-semibold text-gray-700">Selecciona un apartado:</label>
-                <select id="section-selector" class="mt-1 md:mt-0 block w-full md:w-1/2 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg">
-                    <option value="default" disabled selected>Elige un tema para empezar...</option>
-                    <option value="section1">1. ¿Qué es el Pensamiento Computacional?</option>
-                    <option value="section2">2. Pilares del Pensamiento Computacional</option>
-                    <option value="section3">3. ¿Qué es un Algoritmo?</option>
-                </select>
-            </div>
-            <!-- MODIFICADO: Eliminado 'hidden' para que la barra sea visible y se controle por JS -->
-            <div id="progress-bar-container" class="w-full bg-gray-200 rounded-full h-4 mt-6">
-                <div id="progress-bar" class="progress-bar-inner bg-blue-600 h-4 rounded-full text-center text-white text-xs font-semibold" style="width: 0%;"></div>
+        <!-- Encabezado -->
+        <header class="flex justify-between items-center mb-6 p-4 bg-white shadow-md rounded-lg">
+            <h1 class="text-3xl font-bold text-blue-700">
+                <span class="inline-block align-middle">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                    </svg>
+                </span>
+                <span class="ml-2 align-middle">AulaIA (Acceso)</span>
+            </h1>
+            <div id="user-info" class="text-right">
+                <span id="role-display" class="font-semibold text-lg"></span>
+                <button id="logout-btn" class="ml-4 bg-red-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-600 transition hidden">Salir</button>
             </div>
         </header>
 
-        <!-- Área de Contenido Principal -->
-        <main id="content-area" class="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8" hidden>
-            
-            <!-- Columna Izquierda: Texto Original y Resumen del Alumno -->
-            <div class="flex flex-col gap-8">
-                <!-- Tarjeta de Texto Original -->
-                <section class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b border-gray-300">Texto Original</h2>
-                    <div id="text-container" class="prose prose-custom max-w-none text-lg leading-relaxed text-gray-700">
-                        <p>Por favor, selecciona una sección para cargar el texto.</p>
-                    </div>
-                </section>
+        <!-- Vista de Carga de Autenticación -->
+        <div id="auth-loading-view" class="text-center p-10">
+            <h2 class="text-2xl font-semibold">Conectando...</h2>
+            <p class="text-gray-600">Iniciando la aplicación de forma segura.</p>
+        </div>
 
-                <!-- Tarjeta de Resumen del Alumno -->
-                <section id="user-summary-area" class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                    <h2 class="text-2xl font-bold text-indigo-700 mb-4 pb-2 border-b border-indigo-200">Tu Resumen (Paso 1)</h2>
-                    <p class="mb-4 text-gray-600">Lee el texto original y escribe tu resumen (mínimo 10 palabras) en el siguiente cuadro. Cuando termines, podrás ver el resumen de la IA.</p>
-                    <textarea id="user-summary" class="w-full h-48 p-4 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-indigo-500" placeholder="Escribe tu resumen aquí..."></textarea>
-                    <div id="user-controls" class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <!-- BOTÓN NUEVO: Se activa con 10 palabras -->
-                        <button id="show-ai-summary-btn" class="w-full sm:w-auto bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition-transform transform hover:scale-105 disabled-btn" disabled>
-                            Ver Resumen de la IA (Paso 2)
-                        </button>
-                        
-                        <!-- Botones de Evaluación: Ocultos hasta que se pulse "Ver Resumen" -->
-                        <button id="evaluate-btn" class="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:scale-105 disabled-btn" disabled hidden>Autoevaluar</button>
-                        <button id="gemini-evaluate-btn" disabled class="w-full sm:w-auto flex items-center justify-center space-x-2 bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-transform transform hover:scale-105 disabled-btn" hidden>
-                            <span>✨ Evaluar Razonamiento</span>
-                        </button>
-                        
-                        <div class="text-sm text-gray-600 font-medium">Palabras: <span id="word-count">0</span></div>
-                    </div>
-                </section>
+        <!-- Vista de Selección de Rol -->
+        <div id="role-view" class="view max-w-md mx-auto text-center p-10 bg-white shadow-xl rounded-2xl">
+            <h2 class="text-2xl font-semibold mb-6">¿Cómo quieres acceder?</h2>
+            <div class="space-y-4">
+                <button id="teacher-role-btn" class="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-blue-700 transition shadow-lg">
+                    Soy Profesor
+                </button>
+                <button id="student-role-btn" class="w-full bg-green-600 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-green-700 transition shadow-lg">
+                    Soy Alumno
+                </button>
             </div>
+            <p class="text-xs text-gray-500 mt-6">ID de Sesión: <span id="session-id" class="font-mono"></span></p>
+        </div>
+
+        <!-- ============================================= -->
+        <!-- VISTA DE PROFESOR (HUB) -->
+        <!-- ============================================= -->
+        <div id="teacher-hub-view" class="view grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            <!-- Columna Derecha: Resumen IA y Feedback -->
-            <div class="flex flex-col gap-8">
-                <!-- Tarjeta de Resumen IA: Oculta por defecto -->
-                <section id="summary-area" class="bg-blue-50 p-6 rounded-xl border border-blue-200 shadow-sm" hidden>
-                    <h2 class="text-2xl font-bold text-blue-800 mb-4 pb-2 border-b border-blue-300">Resumen de la IA</h2>
-                    <div id="summary-content" class="prose prose-custom max-w-none text-lg leading-relaxed text-gray-700">
-                        <!-- El resumen de la IA se cargará aquí -->
-                    </div>
-                </section>
-                
-                <!-- Área de Feedback -->
-                <div id="feedback-area" class="mt-0" hidden>
-                    <div id="feedback-content" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            <!-- Columna 1: Acciones -->
+            <div class="md:col-span-1 space-y-4">
+                <div class="bg-white p-6 shadow-lg rounded-lg">
+                    <h2 class="text-2xl font-bold mb-4 border-b pb-2 text-blue-700">Acciones</h2>
+                    <button id="show-create-classroom-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition">
+                        Crear Nueva Aula
+                    </button>
                 </div>
-                <div id="gemini-feedback-area" class="mt-0" hidden></div>
             </div>
 
-        </main>
-        
-        <!-- Overlay de Carga -->
-        <div id="loading-overlay" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50" hidden>
-            <div class="flex flex-col items-center">
-                <div class="loader"></div>
-                <span class="text-lg font-semibold text-gray-700 mt-4">Procesando...</span>
+            <!-- Columna 2 y 3: Aulas Creadas -->
+            <div class="md:col-span-2 space-y-4">
+                <div class="bg-white p-6 shadow-lg rounded-lg">
+                    <h2 class="text-2xl font-bold mb-4 border-b pb-2 text-gray-800">Mis Aulas Creadas</h2>
+                    <div id="teacher-classrooms-list" class="space-y-4">
+                        <!-- Las aulas se cargarán aquí -->
+                    </div>
+                </div>
             </div>
+        </div>
+        
+        <!-- ============================================= -->
+        <!-- VISTA DE PROFESOR (CREAR AULA) -->
+        <!-- ============================================= -->
+        <div id="teacher-create-view" class="view bg-white p-6 shadow-lg rounded-lg max-w-3xl mx-auto">
+            <button id="back-to-hub-btn" class="mb-4 text-sm text-blue-600 hover:underline">&larr; Volver al Centro de Aulas</button>
+            <h2 class="text-2xl font-bold mb-4 border-b pb-2 text-blue-700">Crear Nueva Aula</h2>
+            <form id="create-classroom-form" class="space-y-4">
+                <div>
+                    <label for="classroom-name" class="block text-sm font-medium text-gray-700 mb-1">Nombre del Aula / Tema</label>
+                    <input type="text" id="classroom-name" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Ej: Historia de Roma" required>
+                </div>
+                
+                <div>
+                    <label for="classroom-students" class="block text-sm font-medium text-gray-700 mb-1">IDEA o Nick de Alumnos (1 por línea)</label>
+                    <textarea id="classroom-students" rows="6" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="idea_alumno1&#10;nick_alumno2&#10;idea_alumno3" required></textarea>
+                </div>
+
+                <div>
+                    <label for="classroom-text" class="block text-sm font-medium text-gray-700 mb-1">Texto para Analizar</label>
+                    <p class="text-xs text-gray-500 mb-2">Nota: La carga de PDF no está soportada. Por favor, copie y pegue el texto del documento aquí.</p>
+                    <textarea id="classroom-text" rows="10" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Pega aquí el contenido del tema..." required></textarea>
+                </div>
+                
+                <div>
+                    <label for="classroom-rubric" class="block text-sm font-medium text-gray-700 mb-1">Rúbrica de Evaluación (Opcional)</label>
+                    <textarea id="classroom-rubric" rows="4" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Define aquí los criterios de evaluación... (Ej: Resumen 3/10, Coherencia 2/10...)"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition">
+                    Guardar Aula
+                </button>
+            </form>
+        </div>
+
+
+        <!-- ============================================= -->
+        <!-- VISTA DE ALUMNO (LOGIN) -->
+        <!-- ============================================= -->
+        <div id="student-login-view" class="view max-w-md mx-auto p-10 bg-white shadow-xl rounded-2xl">
+            <h2 class="text-2xl font-semibold mb-6 text-green-700">Acceso de Alumno</h2>
+            <form id="student-login-form" class="space-y-4">
+                <div>
+                    <label for="student-classroom-select" class="block text-sm font-medium text-gray-700 mb-1">1. Selecciona tu Aula</label>
+                    <select id="student-classroom-select" class="w-full p-3 border border-gray-300 rounded-lg bg-white" required>
+                        <option value="" disabled selected>Cargando aulas...</option>
+                        <!-- Las aulas se cargarán aquí -->
+                    </select>
+                </div>
+                <div>
+                    <label for="student-nick" class="block text-sm font-medium text-gray-700 mb-1">2. Introduce tu IDEA o Nick</label>
+                    <input type="text" id="student-nick" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Tu IDEA o Nick" required>
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg hover:bg-green-700 transition shadow-lg">
+                    Entrar
+                </button>
+            </form>
+        </div>
+
+    </div> <!-- Fin de #app -->
+
+    <!-- Loader Modal -->
+    <div id="loader">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Message Modal -->
+    <div id="message-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
+            <h3 id="message-title" class="text-xl font-bold mb-4"></h3>
+            <p id="message-body"></p>
+            <button id="message-close-btn" class="mt-6 w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">
+                Entendido
+            </button>
         </div>
     </div>
 
-    <script>
-        // --- MODELO (Datos de la aplicación) ---
-        const data = {
-// ... existing code ... -->
-                "summary": "Un algoritmo es una secuencia de instrucciones finita, ordenada y precisa diseñada para resolver un problema, similar a una receta. Sus características clave son: ser finito (debe terminar), preciso (sin ambigüedades), definido (mismos datos de entrada producen misma salida) y eficiente (uso razonable de tiempo y recursos)."
+
+    <!-- ============================================= -->
+    <!-- SCRIPTS -->
+    <!-- ============================================= -->
+    <script type="module">
+        // Importar Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            addDoc, 
+            setDoc, 
+            onSnapshot, 
+            collection, 
+            query,
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración de Firebase (inyectada por el entorno)
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'aula-ia-default';
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Variables de estado
+        let userId = null;
+        let currentRole = null;
+        let unsubscribeClassrooms = () => {};
+
+        // Selectores de UI
+        const views = {
+            authLoading: document.getElementById('auth-loading-view'),
+            role: document.getElementById('role-view'),
+            teacherHub: document.getElementById('teacher-hub-view'),
+            teacherCreate: document.getElementById('teacher-create-view'),
+            studentLogin: document.getElementById('student-login-view')
+        };
+        const loader = document.getElementById('loader');
+        const messageModal = document.getElementById('message-modal');
+        const messageTitle = document.getElementById('message-title');
+        const messageBody = document.getElementById('message-body');
+        const messageCloseBtn = document.getElementById('message-close-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const roleDisplay = document.getElementById('role-display');
+
+        // --- FUNCIONES DE UTILIDAD (Loader y Mensajes) ---
+
+        function showView(viewId) {
+            Object.values(views).forEach(v => v.style.display = 'none');
+            if (views[viewId]) {
+                views[viewId].style.display = 'block';
             }
-        };
-
-        // AÑADIDO: Estado global para la barra de progreso
-        let sectionsCompleted = {
-            "section1": false,
-            "section2": false,
-            "section3": false
-        };
-
-        const apiKey = ""; // DEJA ESTO VACÍO.
-
-        // --- VISTAS (Elementos del DOM) ---
-// ... existing code ... -->
-        function loadSection(sectionId) {
-            const sectionData = data[sectionId];
-            
-// ... existing code ... -->
-            evaluateBtn.disabled = true;
-            geminiEvaluateBtn.disabled = true;
-
-            // 7. AÑADIDO: Mostrar y actualizar la barra de progreso
-            progressBarContainer.hidden = false;
-            updateProgressBar();
         }
 
-        // Contar palabras y habilitar botones
-// ... existing code ... -->
-            feedbackArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        function showLoader(show) {
+            loader.classList.toggle('active', show);
+        }
+
+        function showMessage(title, body) {
+            messageTitle.textContent = title;
+            messageBody.textContent = body;
+            messageModal.classList.remove('hidden');
+        }
+
+        messageCloseBtn.addEventListener('click', () => {
+            messageModal.classList.add('hidden');
         });
 
-        // Evaluación con Gemini
-// ... existing code ... -->
-        // Llamada a la API de Gemini
-        async function callGeminiAPI(systemPrompt, userPrompt) {
-            const apiUrl = `https://generativelace.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-// ... existing code ... -->
-            
-            // Lógica de reintento (backoff exponencial) - MODIFICADA PARA ROBUSTEZ
-            let response;
-            let delay = 1000;
-            for (let i = 0; i < 3; i++) {
-                try {
-                    response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+        // --- LÓGICA DE AUTENTICACIÓN Y ROLES ---
 
-                    if (response.ok) {
-                        break; // Éxito, salir del bucle
-                    }
-                    
-                    if (response.status === 429 || response.status >= 500) {
-                        // Error de servidor o rate limit, esperar y reintentar
-                        if (i < 2) await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2;
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                document.getElementById('session-id').textContent = userId.substring(0, 8) + '...';
+                showView('role');
+            } else {
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
                     } else {
-                        // Otro error (ej. 400, 401), no reintentar
-                        throw new Error(`Error de API: ${response.status} ${response.statusText}`);
+                        await signInAnonymously(auth);
                     }
                 } catch (error) {
-                    // Error de red (ej. fetch falló), esperar y reintentar
-                    console.warn(`Intento ${i + 1} fallido: ${error.message}`);
-                    if (i < 2) { // No esperar en el último intento
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2;
-                    } else {
-                        // Todos los intentos fallaron
-                        throw new Error(`Error de red tras 3 intentos: ${error.message}`);
-                    }
+                    console.error("Error de autenticación:", error);
+                    showMessage("Error de Conexión", "No se pudo iniciar la sesión. Por favor, recarga la página.");
                 }
             }
+        });
 
-            if (!response || !response.ok) {
-                throw new Error(`No se pudo obtener una respuesta válida de la API.`);
-            }
-            
-            const result = await response.json();
-// ... existing code ... -->
-        // Mostrar Feedback de Gemini
-        function displayGeminiFeedback(feedback) {
-            geminiFeedbackArea.innerHTML = `
-// ... existing code ... -->
-                        <p class="text-gray-700">${feedback.evaluacion_general}</p>
-                    </div>
-                </div>
-            `;
+        document.getElementById('teacher-role-btn').addEventListener('click', () => setRole('teacher'));
+        document.getElementById('student-role-btn').addEventListener('click', () => setRole('student'));
+        
+        logoutBtn.addEventListener('click', () => {
+            currentRole = null;
+            unsubscribeClassrooms();
+            showView('role');
+            logoutBtn.classList.add('hidden');
+            roleDisplay.textContent = '';
+        });
 
-            // AÑADIDO: Marcar sección como completada y actualizar barra
-            if (currentSectionId) {
-                sectionsCompleted[currentSectionId] = true;
-                updateProgressBar();
-            }
-        }
-
-        // Mostrar/Ocultar Carga
-// ... existing code ... -->
-        function showLoading(isLoading) {
-            loadingOverlay.hidden = !isLoading;
-        }
-
-        // AÑADIDO: Función de Utilidad para la Barra de Progreso
-        function updateProgressBar() {
-            const totalSections = Object.keys(sectionsCompleted).length;
-            if (totalSections === 0) return; // Evitar división por cero
-
-            const completedCount = Object.values(sectionsCompleted).filter(Boolean).length;
-            const percentage = (completedCount / totalSections) * 100;
-            
-            progressBar.style.width = `${percentage}%`;
-            
-            if (percentage > 10) { // Solo mostrar texto si hay espacio
-                progressBar.textContent = `${Math.round(percentage)}% Completado`;
+        function setRole(role) {
+            currentRole = role;
+            if (role === 'teacher') {
+                roleDisplay.textContent = 'Profesor';
+                roleDisplay.className = 'font-semibold text-lg text-blue-700';
+                showView('teacherHub');
+                loadTeacherClassrooms();
             } else {
-                progressBar.textContent = '';
+                roleDisplay.textContent = 'Alumno';
+                roleDisplay.className = 'font-semibold text-lg text-green-700';
+                showView('studentLogin');
+                loadStudentClassroomList();
             }
+            logoutBtn.classList.remove('hidden');
         }
 
+        // --- LÓGICA DE PROFESOR ---
+
+        const teacherClassroomsList = document.getElementById('teacher-classrooms-list');
+        const createClassroomForm = document.getElementById('create-classroom-form');
+
+        // Botones de navegación del profesor
+        document.getElementById('show-create-classroom-btn').addEventListener('click', () => {
+            showView('teacherCreate');
+            createClassroomForm.reset();
+        });
+        document.getElementById('back-to-hub-btn').addEventListener('click', () => {
+            showView('teacherHub');
+        });
+
+        // Cargar aulas del profesor (en tiempo real)
+        function loadTeacherClassrooms() {
+            unsubscribeClassrooms(); // Detener listener anterior
+            const classroomsQuery = query(collection(db, `artifacts/${appId}/public/data/classrooms`));
+            
+            unsubscribeClassrooms = onSnapshot(classroomsQuery, (snapshot) => {
+                if (snapshot.empty) {
+                    teacherClassroomsList.innerHTML = '<p class="text-gray-500">Aún no has creado ninguna aula.</p>';
+                    return;
+                }
+                
+                teacherClassroomsList.innerHTML = ''; // Limpiar lista
+                snapshot.forEach(doc => {
+                    const classroom = doc.data();
+                    const classroomEl = document.createElement('div');
+                    classroomEl.className = 'p-4 border rounded-lg hover:bg-gray-50 transition cursor-pointer';
+                    classroomEl.innerHTML = `
+                        <h4 class="font-semibold text-lg">${classroom.name}</h4>
+                        <p class="text-sm text-gray-600">${(classroom.sourceText || '').substring(0, 100)}...</p>
+                        <span class="text-xs text-blue-500 font-medium">${classroom.studentList?.length || 0} alumnos</span>
+                    `;
+                    // Esta acción es para el futuro, como se especificó
+                    classroomEl.addEventListener('click', () => {
+                        showMessage(
+                            "Próximamente", 
+                            "Aquí se abriría la aplicación de gestión del aula y el tema, donde añadirías tu API key de iastudio. (Aplicación no construida aún)."
+                        );
+                    });
+                    teacherClassroomsList.appendChild(classroomEl);
+                });
+            }, (error) => {
+                console.error("Error al cargar aulas:", error);
+                showMessage("Error de Base de Datos", "No se pudieron cargar las aulas.");
+            });
+        }
+
+        // Submit del formulario de crear aula
+        createClassroomForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('classroom-name').value;
+            const studentsText = document.getElementById('classroom-students').value;
+            const sourceText = document.getElementById('classroom-text').value;
+            const rubric = document.getElementById('classroom-rubric').value;
+
+            // Validar campos
+            if (!name || !studentsText || !sourceText) {
+                showMessage("Campos incompletos", "Por favor, completa el nombre, la lista de alumnos y el texto.");
+                return;
+            }
+
+            // Procesar lista de alumnos
+            const studentList = studentsText.split('\n')
+                .map(s => s.trim()) // Quitar espacios
+                .filter(s => s.length > 0); // Quitar líneas vacías
+            
+            if (studentList.length === 0) {
+                showMessage("Alumnos Requeridos", "Debes añadir al menos un IDEA o Nick de alumno.");
+                return;
+            }
+
+            showLoader(true);
+            try {
+                // Guardar la nueva aula en Firestore
+                const classroomsCollection = collection(db, `artifacts/${appId}/public/data/classrooms`);
+                await addDoc(classroomsCollection, {
+                    name: name,
+                    studentList: studentList,
+                    sourceText: sourceText,
+                    rubric: rubric, // Opcional
+                    teacherId: userId,
+                    createdAt: serverTimestamp()
+                });
+
+                showMessage("¡Éxito!", `El aula "${name}" ha sido creada.`);
+                createClassroomForm.reset();
+                showView('teacherHub'); // Volver al hub
+
+            } catch (error) {
+                console.error("Error creando aula:", error);
+                showMessage("Error de Base de Datos", `No se pudo crear el aula: ${error.message}`);
+            } finally {
+                showLoader(false);
+            }
+        });
+
+
+        // --- LÓGICA DE ALUMNO ---
+
+        const studentClassroomSelect = document.getElementById('student-classroom-select');
+        const studentLoginForm = document.getElementById('student-login-form');
+
+        // Cargar lista de aulas en el desplegable del alumno
+        function loadStudentClassroomList() {
+            unsubscribeClassrooms(); // Detener listener anterior
+            const classroomsQuery = query(collection(db, `artifacts/${appId}/public/data/classrooms`));
+            
+            unsubscribeClassrooms = onSnapshot(classroomsQuery, (snapshot) => {
+                studentClassroomSelect.innerHTML = '<option value="" disabled selected>Selecciona un aula...</option>'; // Resetear
+                
+                if (snapshot.empty) {
+                    studentClassroomSelect.innerHTML = '<option value="" disabled>No hay aulas disponibles.</option>';
+                    return;
+                }
+                
+                snapshot.forEach(doc => {
+                    const classroom = doc.data();
+                    const option = document.createElement('option');
+                    option.value = doc.id;
+                    option.textContent = classroom.name;
+                    studentClassroomSelect.appendChild(option);
+                });
+            }, (error) => {
+                console.error("Error al cargar aulas (alumno):", error);
+                studentClassroomSelect.innerHTML = '<option value="" disabled>Error al cargar aulas.</option>';
+            });
+        }
+
+        // Login del alumno
+        studentLoginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const classroomId = studentClassroomSelect.value;
+            const nick = document.getElementById('student-nick').value.trim();
+
+            if (!classroomId || !nick) {
+                showMessage("Campos incompletos", "Debes seleccionar un aula e introducir tu nick.");
+                return;
+            }
+
+            showLoader(true);
+            try {
+                // 1. Obtener el documento del aula seleccionada
+                const classroomRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
+                const classroomDoc = await getDoc(classroomRef);
+
+                if (!classroomDoc.exists()) {
+                    throw new Error("El aula seleccionada no existe.");
+                }
+
+                const classroom = classroomDoc.data();
+                
+                // 2. Validar si el nick está en la lista de alumnos de esa aula
+                if (classroom.studentList && classroom.studentList.includes(nick)) {
+                    // ¡Acceso concedido!
+                    // Aquí es donde "saltaría a la otra aplicación"
+                    showMessage(
+                        "Acceso Concedido",
+                        `¡Bienvenido, ${nick}! Cargando tu lección... (Aquí comenzaría la aplicación del alumno).`
+                    );
+                    // Ocultamos el formulario de login como simulación de éxito
+                    showView('authLoading'); // O una vista en blanco
+                    setTimeout(() => { 
+                        logoutBtn.click(); // Deslogueamos para simular que pasó a otra app
+                    }, 3000);
+
+                } else {
+                    // Acceso denegado
+                    showMessage(
+                        "Acceso Denegado",
+                        "Tu IDEA o Nick no se encuentra en la lista de esta aula. Contacta con tu profesor."
+                    );
+                }
+
+            } catch (error) {
+                console.error("Error en login de alumno:", error);
+                showMessage("Error", "No se pudo verificar tu acceso. Inténtalo de nuevo.");
+            } finally {
+                showLoader(false);
+            }
+        });
+
+
+        // --- INICIO DE LA APP ---
+        showView('authLoading');
+    
     </script>
 </body>
 </html>
