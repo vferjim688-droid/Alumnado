@@ -218,6 +218,13 @@
             serverTimestamp 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // --- INICIO: Configuración de la Aplicación ---
+        // Pega aquí la URL de tu aplicación "resumen-paso-a-paso" (Profesor)
+        const RESUMEN_APP_URL = "https://vferjim688-droid.github.io/actividad-paso-a-paso/"; 
+        
+        // Pega aquí la URL de tu aplicación "actividad-resumen" (Alumno)
+        const ACTIVIDAD_APP_URL = "https://vferjim688-droid.github.io/Actividad-Resumen/"; // <-- ¡REVISA SI ESTA ES CORRECTA!
+
         // --- INICIO: Configuración de Firebase ---
         // Para probar en GitHub Pages, crea tu propio proyecto de Firebase
         // y pega aquí tu objeto de configuración.
@@ -400,6 +407,7 @@
                 teacherClassroomsList.innerHTML = ''; // Limpiar lista
                 snapshot.forEach(doc => {
                     const classroom = doc.data();
+                    const classroomId = doc.id; // Capturamos el ID del documento
                     const classroomEl = document.createElement('div');
                     classroomEl.className = 'p-4 border rounded-lg hover:bg-gray-50 transition cursor-pointer';
                     classroomEl.innerHTML = `
@@ -409,10 +417,30 @@
                     `;
                     // Esta acción es para el futuro, como se especificó
                     classroomEl.addEventListener('click', () => {
+                        // ¡ACCIÓN MODIFICADA!
+                        // Redirigir a la aplicación de resumen, pasando el ID del aula
+                        
+                        if (!RESUMEN_APP_URL || RESUMEN_APP_URL.includes("ES_LA_URL_DE_TU_OTRA_APP")) {
+                             showMessage(
+                                "Configuración Requerida", 
+                                "La URL de la aplicación 'resumen-paso-a-paso' aún no se ha configurado en el script (variable RESUMEN_APP_URL)."
+                            );
+                            return;
+                        }
+
+                        // Construir la URL con el ID del aula como parámetro
+                        const url = `${RESUMEN_APP_URL}?aulaId=${classroomId}`;
+                        
+                        // Informar al usuario y redirigir
                         showMessage(
-                            "Próximamente", 
-                            "Aquí se abriría la aplicación de gestión del aula y el tema, donde añadirías tu API key de iastudio. (Aplicación no construida aún)."
+                            "Cargando Aula...", 
+                            `Redirigiendo a la aplicación de resumen para el aula: ${classroom.name}.`
                         );
+                        
+                        // Esperar un momento para que el usuario lea el mensaje
+                        setTimeout(() => {
+                            window.location.href = url;
+                        }, 1500);
                     });
                     teacherClassroomsList.appendChild(classroomEl);
                 });
@@ -529,16 +557,28 @@
                 // 2. Validar si el nick está en la lista de alumnos de esa aula
                 if (classroom.studentList && classroom.studentList.includes(nick)) {
                     // ¡Acceso concedido!
-                    // Aquí es donde "saltaría a la otra aplicación"
+                    // Redirigir a la aplicación de actividad del alumno
+                    
+                    if (!ACTIVIDAD_APP_URL || ACTIVIDAD_APP_URL.includes("ES_LA_URL_DE_TU_OTRA_APP")) {
+                         showMessage(
+                            "Configuración Requerida", 
+                            "La URL de la aplicación 'actividad-resumen' aún no se ha configurado en el script (variable ACTIVIDAD_APP_URL)."
+                        );
+                        return;
+                    }
+
+                    // Construir la URL con el ID del aula y el nick del alumno
+                    const url = `${ACTIVIDAD_APP_URL}?aulaId=${classroomId}&nick=${encodeURIComponent(nick)}`;
+
                     showMessage(
                         "Acceso Concedido",
-                        `¡Bienvenido, ${nick}! Cargando tu lección... (Aquí comenzaría la aplicación del alumno).`
+                        `¡Bienvenido, ${nick}! Cargando tu lección...`
                     );
-                    // Ocultamos el formulario de login como simulación de éxito
-                    showView('authLoading'); // O una vista en blanco
-                    setTimeout(() => { 
-                        logoutBtn.click(); // Deslogueamos para simular que pasó a otra app
-                    }, 3000);
+                    
+                    // Esperar un momento para que el usuario lea el mensaje
+                    setTimeout(() => {
+                        window.location.href = url;
+                    }, 1500);
 
                 } else {
                     // Acceso denegado
