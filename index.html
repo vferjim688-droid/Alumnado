@@ -57,7 +57,8 @@
                     <option value="section3">3. ¿Qué es un Algoritmo?</option>
                 </select>
             </div>
-            <div id="progress-bar-container" class="w-full bg-gray-200 rounded-full h-4 mt-6" hidden>
+            <!-- MODIFICADO: Eliminado 'hidden' para que la barra sea visible y se controle por JS -->
+            <div id="progress-bar-container" class="w-full bg-gray-200 rounded-full h-4 mt-6">
                 <div id="progress-bar" class="progress-bar-inner bg-blue-600 h-4 rounded-full text-center text-white text-xs font-semibold" style="width: 0%;"></div>
             </div>
         </header>
@@ -128,326 +129,125 @@
     <script>
         // --- MODELO (Datos de la aplicación) ---
         const data = {
-            "section1": {
-                "text": `
-                    <h3 class='text-xl font-semibold mb-2'>1. ¿Qué es el Pensamiento Computacional?</h3>
-                    <p>El Pensamiento Computacional es mucho más que saber usar un ordenador. Es una habilidad fundamental que nos permite abordar problemas complejos, descomponerlos y diseñar soluciones que pueden ser implementadas por un ordenador, por otro humano o por nosotros mismos.</p>
-                    <p>No se trata solo de programar, sino de una forma de pensar y resolver problemas que se basa en cuatro pilares clave. Esta habilidad nos ayuda a entender el mundo que nos rodea, que cada vez está más impulsado por la tecnología, y nos da las herramientas para no ser meros consumidores, sino creadores activos.</p>
-                    <ul>
-                        <li>Es una habilidad universal, no solo para programadores.</li>
-                        <li>Nos enseña a lidiar con la complejidad y la ambigüedad.</li>
-                        <li>Fomenta la creatividad y la lógica.</li>
-                    </ul>
-                `,
-                "summary": "El Pensamiento Computacional es una habilidad universal para resolver problemas complejos, no solo para programar. Se basa en cuatro pilares clave y nos permite descomponer problemas y diseñar soluciones, fomentando la lógica y la creatividad para pasar de ser consumidores a creadores de tecnología."
-            },
-            "section2": {
-                "text": `
-                    <h3 class='text-xl font-semibold mb-2'>2. Pilares del Pensamiento Computacional</h3>
-                    <p>El Pensamiento Computacional se sostiene sobre cuatro pilares fundamentales:</p>
-                    <ol class='list-decimal list-inside ml-4 space-y-2'>
-                        <li><strong>Descomposición:</strong> Consiste en dividir un problema o sistema complejo en partes más pequeñas y manejables.</li>
-                        <li><strong>Reconocimiento de Patrones:</strong> Es la habilidad de buscar similitudes, tendencias o regularidades dentro de los problemas. Si resolvemos un problema, podemos aplicar esa solución a problemas similares.</li>
-                        <li><strong>Abstracción:</strong> Se enfoca en ignorar los detalles irrelevantes y centrarse en la información esencial. Es crear un "modelo" simplificado del problema.</li>
-                        <li><strong>Algoritmos:</strong> Es el desarrollo de una secuencia de pasos o reglas claras (un plan) para resolver el problema.</li>
-                    </ol>
-                    <p>Estos cuatro pilares no se aplican de forma aislada; a menudo se entrelazan para construir una solución robusta.</p>
-                `,
-                "summary": "El Pensamiento Computacional se basa en cuatro pilares interrelacionados: 1) Descomposición, para dividir problemas complejos; 2) Reconocimiento de Patrones, para encontrar similitudes y reutilizar soluciones; 3) Abstracción, para centrarse en lo esencial e ignorar detalles irrelevantes; y 4) Algoritmos, para diseñar una secuencia de pasos claros que resuelvan el problema."
-            },
-            "section3": {
-                "text": `
-                    <h3 class='text-xl font-semibold mb-2'>3. ¿Qué es un Algoritmo?</h3>
-                    <p>Un algoritmo es el corazón del pensamiento computacional. Es una secuencia finita, ordenada y precisa de instrucciones o pasos que tienen como objetivo resolver un problema específico o realizar una tarea.</p>
-                    <p>Piénsalo como una receta de cocina: te da una lista de ingredientes (datos de entrada) y una serie de pasos exactos (proceso) para conseguir un resultado (salida). Para que un algoritmo sea eficaz, debe cumplir varias características:</p>
-                    <ul>
-                        <li><strong>Finito:</strong> Debe tener un número limitado de pasos y terminar siempre.</li>
-                        <li><strong>Preciso:</strong> Cada paso debe estar claramente definido y no ser ambiguo.</li>
-                        <li><strong>Definido:</strong> Si se sigue el mismo algoritmo con los mismos datos de entrada, el resultado siempre debe ser el mismo.</li>
-                        <li><strong>Eficiente:</strong> Debe resolver el problema en una cantidad de tiempo y usando una cantidad de recursos razonables.</li>
-                    </ul>
-                `,
+// ... existing code ... -->
                 "summary": "Un algoritmo es una secuencia de instrucciones finita, ordenada y precisa diseñada para resolver un problema, similar a una receta. Sus características clave son: ser finito (debe terminar), preciso (sin ambigüedades), definido (mismos datos de entrada producen misma salida) y eficiente (uso razonable de tiempo y recursos)."
             }
+        };
+
+        // AÑADIDO: Estado global para la barra de progreso
+        let sectionsCompleted = {
+            "section1": false,
+            "section2": false,
+            "section3": false
         };
 
         const apiKey = ""; // DEJA ESTO VACÍO.
 
         // --- VISTAS (Elementos del DOM) ---
-        const sectionSelector = document.getElementById('section-selector');
-        const contentArea = document.getElementById('content-area');
-        const textContainer = document.getElementById('text-container');
-        const summaryArea = document.getElementById('summary-area');
-        const summaryContent = document.getElementById('summary-content');
-        const userSummaryArea = document.getElementById('user-summary-area');
-        const userSummary = document.getElementById('user-summary');
-        const wordCountEl = document.getElementById('word-count');
-        
-        // Botones
-        const showAiSummaryBtn = document.getElementById('show-ai-summary-btn');
-        const evaluateBtn = document.getElementById('evaluate-btn');
-        const geminiEvaluateBtn = document.getElementById('gemini-evaluate-btn');
-        
-        // Áreas de Feedback
-        const feedbackArea = document.getElementById('feedback-area');
-        const feedbackContent = document.getElementById('feedback-content');
-        const geminiFeedbackArea = document.getElementById('gemini-feedback-area');
-        
-        // Estado
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const progressBar = document.getElementById('progress-bar');
-        const progressBarContainer = document.getElementById('progress-bar-container');
-
-        // --- CONTROLADORES (Lógica de la Aplicación) ---
-
-        let currentSectionId = null;
-
-        // Evento principal: Cargar Sección
-        sectionSelector.addEventListener('change', (e) => {
-            currentSectionId = e.target.value;
-            if (currentSectionId && data[currentSectionId]) {
-                loadSection(currentSectionId);
-            }
-        });
-
-        // Cargar el contenido de la sección
+// ... existing code ... -->
         function loadSection(sectionId) {
             const sectionData = data[sectionId];
             
-            // 1. Mostrar texto original
-            textContainer.innerHTML = sectionData.text;
-            contentArea.hidden = false;
-            
-            // 2. Resetear área de resumen del alumno
-            userSummary.value = '';
-            wordCountEl.textContent = '0';
-            
-            // 3. Resetear y mostrar el botón "Ver Resumen"
-            showAiSummaryBtn.hidden = false;
-            showAiSummaryBtn.disabled = true; // Deshabilitado hasta que escriba
-
-            // 4. Ocultar resumen de la IA y botones de evaluación (flujo nuevo)
-            summaryArea.hidden = true;
-            summaryContent.innerHTML = ''; // Limpiar por si acaso
-            evaluateBtn.hidden = true;
-            geminiEvaluateBtn.hidden = true;
-            
-            // 5. Ocultar áreas de feedback
-            feedbackArea.hidden = true;
-            geminiFeedbackArea.hidden = true;
-            feedbackContent.innerHTML = '';
-            geminiFeedbackArea.innerHTML = '';
-
-            // 6. Resetear botones de evaluación
+// ... existing code ... -->
             evaluateBtn.disabled = true;
             geminiEvaluateBtn.disabled = true;
+
+            // 7. AÑADIDO: Mostrar y actualizar la barra de progreso
+            progressBarContainer.hidden = false;
+            updateProgressBar();
         }
 
         // Contar palabras y habilitar botones
-        userSummary.addEventListener('input', () => {
-            const text = userSummary.value.trim();
-            const wordCount = text === '' ? 0 : text.split(/\s+/).length;
-            wordCountEl.textContent = wordCount;
-
-            const minWords = 10;
-            const hasEnoughWords = wordCount >= minWords;
-
-            // Habilitar el botón "Ver Resumen de la IA"
-            showAiSummaryBtn.disabled = !hasEnoughWords;
-            if (hasEnoughWords) {
-                showAiSummaryBtn.classList.remove('disabled-btn');
-            } else {
-                showAiSummaryBtn.classList.add('disabled-btn');
-            }
-
-            // Habilitar botones de evaluación (están ocultos, pero se preparan)
-            evaluateBtn.disabled = !hasEnoughWords;
-            geminiEvaluateBtn.disabled = !hasEnoughWords;
-            
-            if(hasEnoughWords) {
-                evaluateBtn.classList.remove('disabled-btn');
-                geminiEvaluateBtn.classList.remove('disabled-btn');
-            } else {
-                evaluateBtn.classList.add('disabled-btn');
-                geminiEvaluateBtn.classList.add('disabled-btn');
-            }
-        });
-
-        // NUEVO EVENTO: Mostrar el resumen de la IA
-        showAiSummaryBtn.addEventListener('click', () => {
-            if (!currentSectionId || !data[currentSectionId]) return;
-
-            const sectionData = data[currentSectionId];
-
-            // 1. Cargar y mostrar el resumen de la IA
-            summaryContent.innerHTML = sectionData.summary;
-            summaryArea.hidden = false;
-
-            // 2. Mostrar los botones de evaluación
-            evaluateBtn.hidden = false;
-            geminiEvaluateBtn.hidden = false;
-
-            // 3. Ocultar este botón (ya cumplió su función)
-            showAiSummaryBtn.hidden = true;
-
-            // 4. Scroll suave para ver el resumen (útil en móviles)
-            summaryArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-
-
-        // --- Lógica de Evaluación (sin cambios) ---
-
-        // Autoevaluación simple
-        evaluateBtn.addEventListener('click', () => {
-            feedbackArea.hidden = false;
-            geminiFeedbackArea.hidden = true; // Ocultar el otro feedback
-            feedbackContent.innerHTML = `
-                <div class="feedback-card bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg shadow">
-                    <h3 class="font-bold text-green-800">¡Bien Hecho!</h3>
-                    <p class="text-gray-700">Has completado tu resumen. Ahora compáralo con el de la IA.</p>
-                </div>
-                <div class="feedback-card bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg shadow">
-                    <h3 class="font-bold text-yellow-800">Puntos a Comparar</h3>
-                    <ul class="list-disc list-inside text-gray-700 mt-2">
-                        <li>¿Tu resumen capta la idea principal?</li>
-                        <li>¿Es más corto que el texto original?</li>
-                        <li>¿Usaste tus propias palabras?</li>
-                    </ul>
-                </div>
-            `;
+// ... existing code ... -->
             feedbackArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
 
         // Evaluación con Gemini
-        geminiEvaluateBtn.addEventListener('click', async () => {
-            const studentSummary = userSummary.value;
-            const aiSummary = data[currentSectionId].summary;
-            const originalText = data[currentSectionId].text.replace(/<[^>]*>?/gm, ''); // Limpiar HTML
-
-            if (studentSummary.split(/\s+/).length < 10) {
-                alert("Por favor, escribe un resumen más detallado (mínimo 10 palabras) antes de pedir la evaluación.");
-                return;
-            }
-
-            showLoading(true);
-            feedbackArea.hidden = true;
-            geminiFeedbackArea.hidden = false;
-            geminiFeedbackArea.innerHTML = '<div class="loader-container w-full flex justify-center p-6"><div class="loader"></div></div>';
-
-            const systemPrompt = `
-                Eres un profesor asistente experto en "Pensamiento Computacional".
-                Tu tarea es evaluar el razonamiento del resumen de un alumno.
-                El alumno ha leído un texto original y ha escrito su propio resumen.
-                Luego, le mostramos un resumen modelo (hecho por la IA).
-                El alumno NO debe copiar el resumen modelo. Debe crear el suyo.
-                
-                Compara el "Resumen del Alumno" con el "Texto Original" y el "Resumen Modelo".
-                Evalúa si el alumno ha entendido los conceptos clave.
-                
-                Responde en ESPAÑOL.
-                Tu respuesta debe ser concisa, constructiva y amigable.
-                Usa el siguiente formato JSON (sin saltos de línea dentro de los strings):
-                {
-                  "puntos_fuertes": "Un string que describe 2-3 cosas que el alumno hizo bien (ej. 'Has capturado la idea principal de...').",
-                  "puntos_a_mejorar": "Un string que sugiere 1-2 mejoras (ej. 'Intenta incluir el concepto de... la próxima vez.').",
-                  "evaluacion_general": "Un string con un breve párrafo de ánimo y un consejo."
-                }
-            `;
-
-            const userPrompt = `
-                Texto Original: ${originalText}
-                Resumen Modelo (IA): ${aiSummary}
-                Resumen del Alumno: ${studentSummary}
-            `;
-            
-            try {
-                const response = await callGeminiAPI(systemPrompt, userPrompt);
-                displayGeminiFeedback(response);
-            } catch (error) {
-                console.error("Error llamando a Gemini:", error);
-                geminiFeedbackArea.innerHTML = `<div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg shadow"><h3 class="font-bold">Error de Conexión</h3><p>No se pudo contactar con el servicio de evaluación. Por favor, inténtalo de nuevo más tarde.</p></div>`;
-            } finally {
-                showLoading(false);
-                geminiFeedbackArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        });
-
+// ... existing code ... -->
         // Llamada a la API de Gemini
         async function callGeminiAPI(systemPrompt, userPrompt) {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelace.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+// ... existing code ... -->
             
-            const payload = {
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                },
-                contents: [{
-                    parts: [{ text: userPrompt }]
-                }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    temperature: 0.5,
-                }
-            };
-            
-            // Lógica de reintento (backoff exponencial)
+            // Lógica de reintento (backoff exponencial) - MODIFICADA PARA ROBUSTEZ
             let response;
             let delay = 1000;
             for (let i = 0; i < 3; i++) {
-                response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                try {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
-                if (response.status === 429 || response.status >= 500) {
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    delay *= 2;
-                } else {
-                    break;
+                    if (response.ok) {
+                        break; // Éxito, salir del bucle
+                    }
+                    
+                    if (response.status === 429 || response.status >= 500) {
+                        // Error de servidor o rate limit, esperar y reintentar
+                        if (i < 2) await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2;
+                    } else {
+                        // Otro error (ej. 400, 401), no reintentar
+                        throw new Error(`Error de API: ${response.status} ${response.statusText}`);
+                    }
+                } catch (error) {
+                    // Error de red (ej. fetch falló), esperar y reintentar
+                    console.warn(`Intento ${i + 1} fallido: ${error.message}`);
+                    if (i < 2) { // No esperar en el último intento
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2;
+                    } else {
+                        // Todos los intentos fallaron
+                        throw new Error(`Error de red tras 3 intentos: ${error.message}`);
+                    }
                 }
             }
 
-            if (!response.ok) {
-                throw new Error(`Error de API: ${response.statusText}`);
+            if (!response || !response.ok) {
+                throw new Error(`No se pudo obtener una respuesta válida de la API.`);
             }
             
             const result = await response.json();
-            
-            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0].text) {
-                // El resultado es un string JSON, hay que parsearlo.
-                return JSON.parse(result.candidates[0].content.parts[0].text);
-            } else {
-                throw new Error("Respuesta inesperada de la API.");
-            }
-        }
-
+// ... existing code ... -->
         // Mostrar Feedback de Gemini
         function displayGeminiFeedback(feedback) {
             geminiFeedbackArea.innerHTML = `
-                <div class="bg-purple-50 p-6 rounded-xl border border-purple-200 shadow-lg">
-                    <h2 class="text-2xl font-bold text-purple-800 mb-4 pb-2 border-b border-purple-300">✨ Evaluación de tu Razonamiento</h2>
-                    
-                    <div class="mb-4">
-                        <h3 class="text-lg font-semibold text-green-700 mb-2">Puntos Fuertes</h3>
-                        <p class="text-gray-700">${feedback.puntos_fuertes}</p>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <h3 class="text-lg font-semibold text-yellow-700 mb-2">Puntos a Mejorar</h3>
-                        <p class="text-gray-700">${feedback.puntos_a_mejorar}</p>
-                    </div>
-                    
-                    <div>
-                        <h3 class="text-lg font-semibold text-indigo-700 mb-2">Evaluación General</h3>
+// ... existing code ... -->
                         <p class="text-gray-700">${feedback.evaluacion_general}</p>
                     </div>
                 </div>
             `;
+
+            // AÑADIDO: Marcar sección como completada y actualizar barra
+            if (currentSectionId) {
+                sectionsCompleted[currentSectionId] = true;
+                updateProgressBar();
+            }
         }
 
         // Mostrar/Ocultar Carga
+// ... existing code ... -->
         function showLoading(isLoading) {
             loadingOverlay.hidden = !isLoading;
+        }
+
+        // AÑADIDO: Función de Utilidad para la Barra de Progreso
+        function updateProgressBar() {
+            const totalSections = Object.keys(sectionsCompleted).length;
+            if (totalSections === 0) return; // Evitar división por cero
+
+            const completedCount = Object.values(sectionsCompleted).filter(Boolean).length;
+            const percentage = (completedCount / totalSections) * 100;
+            
+            progressBar.style.width = `${percentage}%`;
+            
+            if (percentage > 10) { // Solo mostrar texto si hay espacio
+                progressBar.textContent = `${Math.round(percentage)}% Completado`;
+            } else {
+                progressBar.textContent = '';
+            }
         }
 
     </script>
