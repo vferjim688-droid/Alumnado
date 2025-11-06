@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actividad: Pensamiento Computacional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
+        }
+        .prose-custom p, .prose-custom li { margin-bottom: 1em; }
+        .prose-custom h1, .prose-custom h2, .prose-custom h3, .prose-custom h4 { margin-bottom: 0.5em; }
+        .feedback-card, .progress-bar-inner {
+            transition: all 0.5s ease-in-out;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Clases de utilidad para botones deshabilitados */
+        .disabled-btn {
+            background-color: #9ca3af; /* gray-400 */
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .disabled-btn:hover {
+            background-color: #9ca3af;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden">
+        
+        <!-- Encabezado y Selector de Sección -->
+        <header class="p-6 md:p-8 border-b border-gray-200 bg-gray-50">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Actividad de Resumen: Pensamiento Computacional</h1>
+            <div class="flex flex-col md:flex-row md:items-center gap-4">
+                <label for="section-selector" class="text-lg font-semibold text-gray-700">Selecciona un apartado:</label>
+                <select id="section-selector" class="mt-1 md:mt-0 block w-full md:w-1/2 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg">
+                    <option value="default" disabled selected>Elige un tema para empezar...</option>
+                    <option value="section1">1. ¿Qué es el Pensamiento Computacional?</option>
+                    <option value="section2">2. Pilares del Pensamiento Computacional</option>
+                    <option value="section3">3. ¿Qué es un Algoritmo?</option>
+                </select>
+            </div>
+            <div id="progress-bar-container" class="w-full bg-gray-200 rounded-full h-4 mt-6" hidden>
+                <div id="progress-bar" class="progress-bar-inner bg-blue-600 h-4 rounded-full text-center text-white text-xs font-semibold" style="width: 0%;"></div>
+            </div>
+        </header>
+
+        <!-- Área de Contenido Principal -->
+        <main id="content-area" class="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8" hidden>
+            
+            <!-- Columna Izquierda: Texto Original y Resumen del Alumno -->
+            <div class="flex flex-col gap-8">
+                <!-- Tarjeta de Texto Original -->
+                <section class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b border-gray-300">Texto Original</h2>
+                    <div id="text-container" class="prose prose-custom max-w-none text-lg leading-relaxed text-gray-700">
+                        <p>Por favor, selecciona una sección para cargar el texto.</p>
+                    </div>
+                </section>
+
+                <!-- Tarjeta de Resumen del Alumno -->
+                <section id="user-summary-area" class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-4 pb-2 border-b border-indigo-200">Tu Resumen (Paso 1)</h2>
+                    <p class="mb-4 text-gray-600">Lee el texto original y escribe tu resumen (mínimo 10 palabras) en el siguiente cuadro. Cuando termines, podrás ver el resumen de la IA.</p>
+                    <textarea id="user-summary" class="w-full h-48 p-4 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-indigo-500" placeholder="Escribe tu resumen aquí..."></textarea>
+                    <div id="user-controls" class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <!-- BOTÓN NUEVO: Se activa con 10 palabras -->
+                        <button id="show-ai-summary-btn" class="w-full sm:w-auto bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 transition-transform transform hover:scale-105 disabled-btn" disabled>
+                            Ver Resumen de la IA (Paso 2)
+                        </button>
+                        
+                        <!-- Botones de Evaluación: Ocultos hasta que se pulse "Ver Resumen" -->
+                        <button id="evaluate-btn" class="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:scale-105 disabled-btn" disabled hidden>Autoevaluar</button>
+                        <button id="gemini-evaluate-btn" disabled class="w-full sm:w-auto flex items-center justify-center space-x-2 bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-transform transform hover:scale-105 disabled-btn" hidden>
+                            <span>✨ Evaluar Razonamiento</span>
+                        </button>
+                        
+                        <div class="text-sm text-gray-600 font-medium">Palabras: <span id="word-count">0</span></div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Columna Derecha: Resumen IA y Feedback -->
+            <div class="flex flex-col gap-8">
+                <!-- Tarjeta de Resumen IA: Oculta por defecto -->
+                <section id="summary-area" class="bg-blue-50 p-6 rounded-xl border border-blue-200 shadow-sm" hidden>
+                    <h2 class="text-2xl font-bold text-blue-800 mb-4 pb-2 border-b border-blue-300">Resumen de la IA</h2>
+                    <div id="summary-content" class="prose prose-custom max-w-none text-lg leading-relaxed text-gray-700">
+                        <!-- El resumen de la IA se cargará aquí -->
+                    </div>
+                </section>
+                
+                <!-- Área de Feedback -->
+                <div id="feedback-area" class="mt-0" hidden>
+                    <div id="feedback-content" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+                <div id="gemini-feedback-area" class="mt-0" hidden></div>
+            </div>
+
+        </main>
+        
+        <!-- Overlay de Carga -->
+        <div id="loading-overlay" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50" hidden>
+            <div class="flex flex-col items-center">
+                <div class="loader"></div>
+                <span class="text-lg font-semibold text-gray-700 mt-4">Procesando...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- MODELO (Datos de la aplicación) ---
+        const data = {
+            "section1": {
+                "text": `
+                    <h3 class='text-xl font-semibold mb-2'>1. ¿Qué es el Pensamiento Computacional?</h3>
+                    <p>El Pensamiento Computacional es mucho más que saber usar un ordenador. Es una habilidad fundamental que nos permite abordar problemas complejos, descomponerlos y diseñar soluciones que pueden ser implementadas por un ordenador, por otro humano o por nosotros mismos.</p>
+                    <p>No se trata solo de programar, sino de una forma de pensar y resolver problemas que se basa en cuatro pilares clave. Esta habilidad nos ayuda a entender el mundo que nos rodea, que cada vez está más impulsado por la tecnología, y nos da las herramientas para no ser meros consumidores, sino creadores activos.</p>
+                    <ul>
+                        <li>Es una habilidad universal, no solo para programadores.</li>
+                        <li>Nos enseña a lidiar con la complejidad y la ambigüedad.</li>
+                        <li>Fomenta la creatividad y la lógica.</li>
+                    </ul>
+                `,
+                "summary": "El Pensamiento Computacional es una habilidad universal para resolver problemas complejos, no solo para programar. Se basa en cuatro pilares clave y nos permite descomponer problemas y diseñar soluciones, fomentando la lógica y la creatividad para pasar de ser consumidores a creadores de tecnología."
+            },
+            "section2": {
+                "text": `
+                    <h3 class='text-xl font-semibold mb-2'>2. Pilares del Pensamiento Computacional</h3>
+                    <p>El Pensamiento Computacional se sostiene sobre cuatro pilares fundamentales:</p>
+                    <ol class='list-decimal list-inside ml-4 space-y-2'>
+                        <li><strong>Descomposición:</strong> Consiste en dividir un problema o sistema complejo en partes más pequeñas y manejables.</li>
+                        <li><strong>Reconocimiento de Patrones:</strong> Es la habilidad de buscar similitudes, tendencias o regularidades dentro de los problemas. Si resolvemos un problema, podemos aplicar esa solución a problemas similares.</li>
+                        <li><strong>Abstracción:</strong> Se enfoca en ignorar los detalles irrelevantes y centrarse en la información esencial. Es crear un "modelo" simplificado del problema.</li>
+                        <li><strong>Algoritmos:</strong> Es el desarrollo de una secuencia de pasos o reglas claras (un plan) para resolver el problema.</li>
+                    </ol>
+                    <p>Estos cuatro pilares no se aplican de forma aislada; a menudo se entrelazan para construir una solución robusta.</p>
+                `,
+                "summary": "El Pensamiento Computacional se basa en cuatro pilares interrelacionados: 1) Descomposición, para dividir problemas complejos; 2) Reconocimiento de Patrones, para encontrar similitudes y reutilizar soluciones; 3) Abstracción, para centrarse en lo esencial e ignorar detalles irrelevantes; y 4) Algoritmos, para diseñar una secuencia de pasos claros que resuelvan el problema."
+            },
+            "section3": {
+                "text": `
+                    <h3 class='text-xl font-semibold mb-2'>3. ¿Qué es un Algoritmo?</h3>
+                    <p>Un algoritmo es el corazón del pensamiento computacional. Es una secuencia finita, ordenada y precisa de instrucciones o pasos que tienen como objetivo resolver un problema específico o realizar una tarea.</p>
+                    <p>Piénsalo como una receta de cocina: te da una lista de ingredientes (datos de entrada) y una serie de pasos exactos (proceso) para conseguir un resultado (salida). Para que un algoritmo sea eficaz, debe cumplir varias características:</p>
+                    <ul>
+                        <li><strong>Finito:</strong> Debe tener un número limitado de pasos y terminar siempre.</li>
+                        <li><strong>Preciso:</strong> Cada paso debe estar claramente definido y no ser ambiguo.</li>
+                        <li><strong>Definido:</strong> Si se sigue el mismo algoritmo con los mismos datos de entrada, el resultado siempre debe ser el mismo.</li>
+                        <li><strong>Eficiente:</strong> Debe resolver el problema en una cantidad de tiempo y usando una cantidad de recursos razonables.</li>
+                    </ul>
+                `,
+                "summary": "Un algoritmo es una secuencia de instrucciones finita, ordenada y precisa diseñada para resolver un problema, similar a una receta. Sus características clave son: ser finito (debe terminar), preciso (sin ambigüedades), definido (mismos datos de entrada producen misma salida) y eficiente (uso razonable de tiempo y recursos)."
+            }
+        };
+
+        const apiKey = ""; // DEJA ESTO VACÍO.
+
+        // --- VISTAS (Elementos del DOM) ---
+        const sectionSelector = document.getElementById('section-selector');
+        const contentArea = document.getElementById('content-area');
+        const textContainer = document.getElementById('text-container');
+        const summaryArea = document.getElementById('summary-area');
+        const summaryContent = document.getElementById('summary-content');
+        const userSummaryArea = document.getElementById('user-summary-area');
+        const userSummary = document.getElementById('user-summary');
+        const wordCountEl = document.getElementById('word-count');
+        
+        // Botones
+        const showAiSummaryBtn = document.getElementById('show-ai-summary-btn');
+        const evaluateBtn = document.getElementById('evaluate-btn');
+        const geminiEvaluateBtn = document.getElementById('gemini-evaluate-btn');
+        
+        // Áreas de Feedback
+        const feedbackArea = document.getElementById('feedback-area');
+        const feedbackContent = document.getElementById('feedback-content');
+        const geminiFeedbackArea = document.getElementById('gemini-feedback-area');
+        
+        // Estado
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const progressBar = document.getElementById('progress-bar');
+        const progressBarContainer = document.getElementById('progress-bar-container');
+
+        // --- CONTROLADORES (Lógica de la Aplicación) ---
+
+        let currentSectionId = null;
+
+        // Evento principal: Cargar Sección
+        sectionSelector.addEventListener('change', (e) => {
+            currentSectionId = e.target.value;
+            if (currentSectionId && data[currentSectionId]) {
+                loadSection(currentSectionId);
+            }
+        });
+
+        // Cargar el contenido de la sección
+        function loadSection(sectionId) {
+            const sectionData = data[sectionId];
+            
+            // 1. Mostrar texto original
+            textContainer.innerHTML = sectionData.text;
+            contentArea.hidden = false;
+            
+            // 2. Resetear área de resumen del alumno
+            userSummary.value = '';
+            wordCountEl.textContent = '0';
+            
+            // 3. Resetear y mostrar el botón "Ver Resumen"
+            showAiSummaryBtn.hidden = false;
+            showAiSummaryBtn.disabled = true; // Deshabilitado hasta que escriba
+
+            // 4. Ocultar resumen de la IA y botones de evaluación (flujo nuevo)
+            summaryArea.hidden = true;
+            summaryContent.innerHTML = ''; // Limpiar por si acaso
+            evaluateBtn.hidden = true;
+            geminiEvaluateBtn.hidden = true;
+            
+            // 5. Ocultar áreas de feedback
+            feedbackArea.hidden = true;
+            geminiFeedbackArea.hidden = true;
+            feedbackContent.innerHTML = '';
+            geminiFeedbackArea.innerHTML = '';
+
+            // 6. Resetear botones de evaluación
+            evaluateBtn.disabled = true;
+            geminiEvaluateBtn.disabled = true;
+        }
+
+        // Contar palabras y habilitar botones
+        userSummary.addEventListener('input', () => {
+            const text = userSummary.value.trim();
+            const wordCount = text === '' ? 0 : text.split(/\s+/).length;
+            wordCountEl.textContent = wordCount;
+
+            const minWords = 10;
+            const hasEnoughWords = wordCount >= minWords;
+
+            // Habilitar el botón "Ver Resumen de la IA"
+            showAiSummaryBtn.disabled = !hasEnoughWords;
+            if (hasEnoughWords) {
+                showAiSummaryBtn.classList.remove('disabled-btn');
+            } else {
+                showAiSummaryBtn.classList.add('disabled-btn');
+            }
+
+            // Habilitar botones de evaluación (están ocultos, pero se preparan)
+            evaluateBtn.disabled = !hasEnoughWords;
+            geminiEvaluateBtn.disabled = !hasEnoughWords;
+            
+            if(hasEnoughWords) {
+                evaluateBtn.classList.remove('disabled-btn');
+                geminiEvaluateBtn.classList.remove('disabled-btn');
+            } else {
+                evaluateBtn.classList.add('disabled-btn');
+                geminiEvaluateBtn.classList.add('disabled-btn');
+            }
+        });
+
+        // NUEVO EVENTO: Mostrar el resumen de la IA
+        showAiSummaryBtn.addEventListener('click', () => {
+            if (!currentSectionId || !data[currentSectionId]) return;
+
+            const sectionData = data[currentSectionId];
+
+            // 1. Cargar y mostrar el resumen de la IA
+            summaryContent.innerHTML = sectionData.summary;
+            summaryArea.hidden = false;
+
+            // 2. Mostrar los botones de evaluación
+            evaluateBtn.hidden = false;
+            geminiEvaluateBtn.hidden = false;
+
+            // 3. Ocultar este botón (ya cumplió su función)
+            showAiSummaryBtn.hidden = true;
+
+            // 4. Scroll suave para ver el resumen (útil en móviles)
+            summaryArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+
+
+        // --- Lógica de Evaluación (sin cambios) ---
+
+        // Autoevaluación simple
+        evaluateBtn.addEventListener('click', () => {
+            feedbackArea.hidden = false;
+            geminiFeedbackArea.hidden = true; // Ocultar el otro feedback
+            feedbackContent.innerHTML = `
+                <div class="feedback-card bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg shadow">
+                    <h3 class="font-bold text-green-800">¡Bien Hecho!</h3>
+                    <p class="text-gray-700">Has completado tu resumen. Ahora compáralo con el de la IA.</p>
+                </div>
+                <div class="feedback-card bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg shadow">
+                    <h3 class="font-bold text-yellow-800">Puntos a Comparar</h3>
+                    <ul class="list-disc list-inside text-gray-700 mt-2">
+                        <li>¿Tu resumen capta la idea principal?</li>
+                        <li>¿Es más corto que el texto original?</li>
+                        <li>¿Usaste tus propias palabras?</li>
+                    </ul>
+                </div>
+            `;
+            feedbackArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+
+        // Evaluación con Gemini
+        geminiEvaluateBtn.addEventListener('click', async () => {
+            const studentSummary = userSummary.value;
+            const aiSummary = data[currentSectionId].summary;
+            const originalText = data[currentSectionId].text.replace(/<[^>]*>?/gm, ''); // Limpiar HTML
+
+            if (studentSummary.split(/\s+/).length < 10) {
+                alert("Por favor, escribe un resumen más detallado (mínimo 10 palabras) antes de pedir la evaluación.");
+                return;
+            }
+
+            showLoading(true);
+            feedbackArea.hidden = true;
+            geminiFeedbackArea.hidden = false;
+            geminiFeedbackArea.innerHTML = '<div class="loader-container w-full flex justify-center p-6"><div class="loader"></div></div>';
+
+            const systemPrompt = `
+                Eres un profesor asistente experto en "Pensamiento Computacional".
+                Tu tarea es evaluar el razonamiento del resumen de un alumno.
+                El alumno ha leído un texto original y ha escrito su propio resumen.
+                Luego, le mostramos un resumen modelo (hecho por la IA).
+                El alumno NO debe copiar el resumen modelo. Debe crear el suyo.
+                
+                Compara el "Resumen del Alumno" con el "Texto Original" y el "Resumen Modelo".
+                Evalúa si el alumno ha entendido los conceptos clave.
+                
+                Responde en ESPAÑOL.
+                Tu respuesta debe ser concisa, constructiva y amigable.
+                Usa el siguiente formato JSON (sin saltos de línea dentro de los strings):
+                {
+                  "puntos_fuertes": "Un string que describe 2-3 cosas que el alumno hizo bien (ej. 'Has capturado la idea principal de...').",
+                  "puntos_a_mejorar": "Un string que sugiere 1-2 mejoras (ej. 'Intenta incluir el concepto de... la próxima vez.').",
+                  "evaluacion_general": "Un string con un breve párrafo de ánimo y un consejo."
+                }
+            `;
+
+            const userPrompt = `
+                Texto Original: ${originalText}
+                Resumen Modelo (IA): ${aiSummary}
+                Resumen del Alumno: ${studentSummary}
+            `;
+            
+            try {
+                const response = await callGeminiAPI(systemPrompt, userPrompt);
+                displayGeminiFeedback(response);
+            } catch (error) {
+                console.error("Error llamando a Gemini:", error);
+                geminiFeedbackArea.innerHTML = `<div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg shadow"><h3 class="font-bold">Error de Conexión</h3><p>No se pudo contactar con el servicio de evaluación. Por favor, inténtalo de nuevo más tarde.</p></div>`;
+            } finally {
+                showLoading(false);
+                geminiFeedbackArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+
+        // Llamada a la API de Gemini
+        async function callGeminiAPI(systemPrompt, userPrompt) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                contents: [{
+                    parts: [{ text: userPrompt }]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    temperature: 0.5,
+                }
+            };
+            
+            // Lógica de reintento (backoff exponencial)
+            let response;
+            let delay = 1000;
+            for (let i = 0; i < 3; i++) {
+                response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.status === 429 || response.status >= 500) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                } else {
+                    break;
+                }
+            }
+
+            if (!response.ok) {
+                throw new Error(`Error de API: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0].text) {
+                // El resultado es un string JSON, hay que parsearlo.
+                return JSON.parse(result.candidates[0].content.parts[0].text);
+            } else {
+                throw new Error("Respuesta inesperada de la API.");
+            }
+        }
+
+        // Mostrar Feedback de Gemini
+        function displayGeminiFeedback(feedback) {
+            geminiFeedbackArea.innerHTML = `
+                <div class="bg-purple-50 p-6 rounded-xl border border-purple-200 shadow-lg">
+                    <h2 class="text-2xl font-bold text-purple-800 mb-4 pb-2 border-b border-purple-300">✨ Evaluación de tu Razonamiento</h2>
+                    
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-green-700 mb-2">Puntos Fuertes</h3>
+                        <p class="text-gray-700">${feedback.puntos_fuertes}</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-yellow-700 mb-2">Puntos a Mejorar</h3>
+                        <p class="text-gray-700">${feedback.puntos_a_mejorar}</p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-indigo-700 mb-2">Evaluación General</h3>
+                        <p class="text-gray-700">${feedback.evaluacion_general}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Mostrar/Ocultar Carga
+        function showLoading(isLoading) {
+            loadingOverlay.hidden = !isLoading;
+        }
+
+    </script>
+</body>
+</html>
