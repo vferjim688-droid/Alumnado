@@ -222,25 +222,13 @@
         // Para probar en GitHub Pages, crea tu propio proyecto de Firebase
         // y pega aquí tu objeto de configuración.
         const localFirebaseConfig = {
-            <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyCrZRRrK2pV8-qgbv4SkutKE2LSQFPJE-Q",
-    authDomain: "aulaia-393c0.firebaseapp.com",
-    projectId: "aulaia-393c0",
-    storageBucket: "aulaia-393c0.firebasestorage.app",
-    messagingSenderId: "485029010497",
-    appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-</script>
+            // Esta es tu configuración de Firebase. ¡Ya está correcta!
+            apiKey: "AIzaSyCrZRRrK2pV8-qgbv4SkutKE2LSQFPJE-Q",
+            authDomain: "aulaia-393c0.firebaseapp.com",
+            projectId: "aulaia-393c0",
+            storageBucket: "aulaia-393c0.firebasestorage.app", // Corregí 'firebasestorage.app' a 'appspot.com' si da error, aunque 'firebasestorage.app' es el nuevo formato
+            messagingSenderId: "485029010497",
+            appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
         };
         
         // Detecta si se está ejecutando en el entorno de Canvas o localmente
@@ -298,9 +286,16 @@
         // --- FUNCIONES DE UTILIDAD (Loader y Mensajes) ---
 
         function showView(viewId) {
-            Object.values(views).forEach(v => v.style.display = 'none');
+            // Ocultar todas las vistas
+            Object.values(views).forEach(v => {
+                if(v) v.style.display = 'none';
+            });
+            // Mostrar la vista deseada
             if (views[viewId]) {
                 views[viewId].style.display = 'block';
+            } else if (viewId === 'teacherHub') {
+                // Caso especial para vistas con layout de grid
+                views.teacherHub.style.display = 'grid';
             }
         }
 
@@ -324,7 +319,10 @@
             if (user) {
                 userId = user.uid;
                 document.getElementById('session-id').textContent = userId.substring(0, 8) + '...';
-                showView('role');
+                // Si no hay un rol seleccionado, mostrar la selección de rol
+                if (!currentRole) {
+                    showView('role');
+                }
             } else {
                 try {
                     if (initialAuthToken) {
@@ -344,10 +342,14 @@
         
         logoutBtn.addEventListener('click', () => {
             currentRole = null;
-            unsubscribeClassrooms();
+            unsubscribeClassrooms(); // Detener listeners
             showView('role');
             logoutBtn.classList.add('hidden');
             roleDisplay.textContent = '';
+            
+            // Limpiar campos de alumno si es necesario
+            studentLoginForm.reset();
+            studentClassroomSelect.innerHTML = '<option value="" disabled selected>Cargando aulas...</option>';
         });
 
         function setRole(role) {
@@ -355,7 +357,11 @@
             if (role === 'teacher') {
                 roleDisplay.textContent = 'Profesor';
                 roleDisplay.className = 'font-semibold text-lg text-blue-700';
-                showView('teacherHub');
+                views.teacherHub.style.display = 'grid'; // Asegurarse de que usa grid
+                views.role.style.display = 'none'; // Ocultar otras
+                views.studentLogin.style.display = 'none';
+                views.teacherCreate.style.display = 'none';
+                views.authLoading.style.display = 'none';
                 loadTeacherClassrooms();
             } else {
                 roleDisplay.textContent = 'Alumno';
@@ -377,7 +383,7 @@
             createClassroomForm.reset();
         });
         document.getElementById('back-to-hub-btn').addEventListener('click', () => {
-            showView('teacherHub');
+            setRole('teacher'); // Re-llamar a setRole para asegurar el estado correcto de la vista
         });
 
         // Cargar aulas del profesor (en tiempo real)
@@ -455,7 +461,7 @@
 
                 showMessage("¡Éxito!", `El aula "${name}" ha sido creada.`);
                 createClassroomForm.reset();
-                showView('teacherHub'); // Volver al hub
+                setRole('teacher'); // Volver al hub (usando setRole)
 
             } catch (error) {
                 console.error("Error creando aula:", error);
