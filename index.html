@@ -72,7 +72,7 @@
         </header>
 
         <!-- Vista de Carga de Autenticación -->
-        <div id="auth-loading-view" class="text-center p-10">
+        <div id="auth-loading-view" class="view text-center p-10">
             <h2 class="text-2xl font-semibold">Conectando...</h2>
             <p class="text-gray-600">Iniciando la aplicación de forma segura.</p>
         </div>
@@ -218,15 +218,49 @@
             serverTimestamp 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Configuración de Firebase (inyectada por el entorno)
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        // --- INICIO: Configuración de Firebase ---
+        // Para probar en GitHub Pages, crea tu propio proyecto de Firebase
+        // y pega aquí tu objeto de configuración.
+        const localFirebaseConfig = {
+            // Pega aquí tu configuración de Firebase si pruebas fuera de Canvas
+            // apiKey: "...",
+            // authDomain: "...",
+            // projectId: "...",
+            // storageBucket: "...",
+            // messagingSenderId: "...",
+            // appId: "..."
+        };
+        
+        // Detecta si se está ejecutando en el entorno de Canvas o localmente
+        const isCanvasEnvironment = typeof __firebase_config !== 'undefined' && __firebase_config !== '{}';
+        
+        const firebaseConfigString = isCanvasEnvironment ? __firebase_config : JSON.stringify(localFirebaseConfig);
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'aula-ia-default';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : (localFirebaseConfig.projectId || 'aula-ia-default');
 
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        let app;
+        let auth;
+        let db;
+
+        try {
+            const firebaseConfig = JSON.parse(firebaseConfigString);
+            if (!firebaseConfig.apiKey) {
+                throw new Error("Configuración de Firebase no encontrada. Pégala en 'localFirebaseConfig' para probar.");
+            }
+            // Inicializar Firebase
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+        } catch (error) {
+            console.error("Error al inicializar Firebase:", error.message);
+            document.body.innerHTML = `<div class="p-8 text-center text-red-600">
+                <h1 class="text-2xl font-bold">Error de Configuración</h1>
+                <p>${error.message}</p>
+                <p>Si estás probando en GitHub Pages, asegúrate de pegar tu 'firebaseConfig' en el script.</p>
+            </div>`;
+        }
+        // --- FIN: Configuración de Firebase ---
 
         // Variables de estado
         let userId = null;
@@ -506,7 +540,10 @@
 
 
         // --- INICIO DE LA APP ---
-        showView('authLoading');
+        // Solo inicia la app si Firebase se inicializó correctamente
+        if (auth) {
+            showView('authLoading');
+        }
     
     </script>
 </body>
