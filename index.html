@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AulaIA - Llave de Acceso</title>
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -151,7 +151,6 @@
             </form>
         </div>
 
-
         <!-- ============================================= -->
         <!-- VISTA DE ALUMNO (LOGIN) -->
         <!-- ============================================= -->
@@ -247,8 +246,8 @@
         // Para probar en GitHub Pages, crea tu propio proyecto de Firebase
         // y pega aquí tu objeto de configuración.
         const localFirebaseConfig = {
-            // Esta es tu configuración de Firebase. ¡Ya está correcta!
-            apiKey: "AIzaSyCrZRRrK2pV8-qgbv4SkutKE2LSQFPJE-Q",
+            // ¡Clave API actualizada a la nueva que proporcionaste!
+            apiKey: "AIzaSyBiaYwiczL2M-1jr6G7DAAhRTyF1SXJKRI",
             authDomain: "aulaia-393c0.firebaseapp.com",
             projectId: "aulaia-393c0",
             storageBucket: "aulaia-393c0.appspot.com", // Usar .appspot.com es más seguro que .firebasestorage.app
@@ -633,123 +632,111 @@
                     });
                     showMessage("¡Éxito!", `El aula "${name}" ha sido creada.`);
                 }
-                
+                                
                 setRole('teacher'); // Volver al hub
 
             } catch (error) {
-                console.error("Error guardando aula:", error);
-                showMessage("Error de Base de Datos", `No se pudo guardar el aula: ${error.message}`);
+                console.error("Error al guardar aula:", error);
+                showMessage("Error", `No se pudo guardar el aula: ${error.message}`);
             } finally {
                 showLoader(false);
-                // Resetear el formulario y el estado de edición
-                currentEditingClassroomId = null;
-                createClassroomForm.reset();
-                document.getElementById('create-view-title').textContent = 'Crear Nueva Aula';
-                document.getElementById('create-view-submit-btn').textContent = 'Guardar Aula';
             }
         });
 
+        // --- LÓGICA DE ALUMNO (¡AÑADIDO!) ---
 
-        // --- LÓGICA DE ALUMNO ---
-
-        const studentClassroomSelect = document.getElementById('student-classroom-select');
         const studentLoginForm = document.getElementById('student-login-form');
+        const studentClassroomSelect = document.getElementById('student-classroom-select');
 
-        // Cargar lista de aulas en el desplegable del alumno
-        function loadStudentClassroomList() {
-            unsubscribeClassrooms(); // Detener listener anterior
+        // Cargar la lista de aulas para el selector del alumno
+        async function loadStudentClassroomList() {
+            unsubscribeClassrooms(); // Detener listeners de profesor si los hubiera
             const classroomsQuery = query(collection(db, `artifacts/${appId}/public/data/classrooms`));
             
-            unsubscribeClassrooms = onSnapshot(classroomsQuery, (snapshot) => {
-                studentClassroomSelect.innerHTML = '<option value="" disabled selected>Selecciona un aula...</option>'; // Resetear
-                
-                if (snapshot.empty) {
-                    studentClassroomSelect.innerHTML = '<option value="" disabled>No hay aulas disponibles.</option>';
-                    return;
-                }
-                
-                snapshot.forEach(doc => {
-                    const classroom = doc.data();
-                    const option = document.createElement('option');
-                    option.value = doc.id;
-                    option.textContent = classroom.name;
-                    studentClassroomSelect.appendChild(option);
+            studentClassroomSelect.innerHTML = '<option value="" disabled selected>Cargando aulas...</option>';
+            
+            try {
+                // Usamos onSnapshot para que la lista esté siempre actualizada
+                unsubscribeClassrooms = onSnapshot(classroomsQuery, (snapshot) => {
+                    if (snapshot.empty) {
+                        studentClassroomSelect.innerHTML = '<option value="" disabled>No hay aulas disponibles.</option>';
+                        return;
+                    }
+                    
+                    studentClassroomSelect.innerHTML = '<option value="" disabled selected>Selecciona tu aula...</option>';
+                    snapshot.forEach(doc => {
+                        const classroom = doc.data();
+                        const option = document.createElement('option');
+                        option.value = doc.id;
+                        option.textContent = classroom.name;
+                        studentClassroomSelect.appendChild(option);
+                    });
                 });
-            }, (error) => {
-                console.error("Error al cargar aulas (alumno):", error);
+            } catch (error) {
+                console.error("Error al cargar lista de aulas para alumno:", error);
                 studentClassroomSelect.innerHTML = '<option value="" disabled>Error al cargar aulas.</option>';
-            });
+            }
         }
 
-        // Login del alumno (LÓGICA CORREGIDA)
+        // Manejador del login del alumno
         studentLoginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const classroomId = studentClassroomSelect.value;
-            const nick = document.getElementById('student-nick').value.trim();
+            const selectedAulaId = studentClassroomSelect.value;
+            const studentNick = document.getElementById('student-nick').value.trim();
 
-            if (!classroomId || !nick) {
-                showMessage("Campos incompletos", "Debes seleccionar un aula e introducir tu nick.");
+            if (!selectedAulaId) {
+                showMessage("Error", "Por favor, selecciona un aula de la lista.");
+                return;
+            }
+            if (!studentNick) {
+                showMessage("Error", "Por favor, introduce tu IDEA o Nick.");
                 return;
             }
 
             showLoader(true);
             try {
-                // 1. Obtener el aula seleccionada
-                const docRef = doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId);
+                // 1. Obtener los datos del aula para verificar al alumno
+                const docRef = doc(db, `artifacts/${appId}/public/data/classrooms`, selectedAulaId);
                 const docSnap = await getDoc(docRef);
 
-                if (docSnap.exists()) {
-                    const classroom = docSnap.data();
-                    const studentList = classroom.studentList || [];
+                if (!docSnap.exists()) {
+                    throw new Error("El aula seleccionada ya no existe.");
+                }
+
+                const classroomData = docSnap.data();
+                // Comprobación (ignorando mayúsculas/minúsculas)
+                const isStudentAuthorized = classroomData.studentList && 
+                                           classroomData.studentList.some(nick => nick.toLowerCase() === studentNick.toLowerCase());
+
+                if (isStudentAuthorized) {
+                    // 2. ¡Autorizado! Construir la URL y redirigir
                     
-                    // 2. Comprobar si el nick está en la lista (mejorando la comprobación, insensible a may/min)
-                    const normalizedNick = nick.toLowerCase();
-                    const normalizedStudentList = studentList.map(s => s.toLowerCase());
-
-                    if (normalizedStudentList.includes(normalizedNick)) {
-                        // ¡Éxito! Redirigir
-                        // Encontrar el nick original para pasarlo en la URL
-                        const originalNick = studentList.find(s => s.toLowerCase() === normalizedNick); 
-                        
-                        if (!ACTIVIDAD_APP_URL || ACTIVIDAD_APP_URL.includes("ES_LA_URL_DE_TU_OTRA_APP")) {
-                             showMessage(
-                                "Configuración Requerida", 
-                                "La URL de la aplicación 'actividad-resumen' (Alumno) aún no se ha configurado en el script (variable ACTIVIDAD_APP_URL)."
-                            );
-                            showLoader(false); // Detener el loader aquí
-                            return;
-                        }
-                        
-                        const url = `${ACTIVIDAD_APP_URL}?aulaId=${classroomId}&nick=${encodeURIComponent(originalNick)}`;
-                        showMessage(
-                            "¡Acceso Concedido!", 
-                            `Bienvenido, ${originalNick}. Cargando la actividad...`
-                        );
-                        setTimeout(() => { window.location.href = url; }, 1500);
-
-                    } else {
-                        // Error: Nick no encontrado
-                        showMessage("Acceso Denegado", "Tu IDEA/Nick no se encuentra en la lista de esta aula. Revisa si lo has escrito bien o contacta a tu profesor.");
+                    if (!ACTIVIDAD_APP_URL) {
+                         throw new Error("La URL de la aplicación de actividad (ACTIVIDAD_APP_URL) no está configurada.");
                     }
+
+                    // Construimos la URL con los parámetros
+                    const url = `${ACTIVIDAD_APP_URL}?aulaId=${selectedAulaId}&alumnoId=${encodeURIComponent(studentNick)}`;
+                    
+                    showMessage("Acceso Concedido", "Redirigiendo a tu actividad...");
+                    
+                    // Dar tiempo al usuario para leer el mensaje
+                    setTimeout(() => {
+                        window.location.href = url;
+                    }, 1500);
+
                 } else {
-                    // Error: Aula no encontrada
-                    showMessage("Error", "El aula seleccionada ya no existe. Por favor, recarga la página.");
+                    // 3. No autorizado
+                    throw new Error("Tu IDEA o Nick no está en la lista de esta aula. Contacta con tu profesor.");
                 }
 
             } catch (error) {
-                console.error("Error en login de alumno:", error);
-                showMessage("Error de Conexión", `Ha ocurrido un error: ${error.message}`);
+                console.error("Error en el login de alumno:", error);
+                showMessage("Acceso Denegado", error.message);
             } finally {
-                // Solo ocultar el loader si no estamos redirigiendo
-                if (!window.location.href.startsWith(ACTIVIDAD_APP_URL)) {
-                    showLoader(false);
-                }
+                showLoader(false);
             }
         });
-
-
-        // --- INICIALIZACIÓN ---
-        showView('authLoading'); // Mostrar "Conectando..." al principio
 
     </script>
 </body>
