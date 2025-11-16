@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AulaIA - Llave de Acceso</title>
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -199,9 +199,9 @@
             signInAnonymously, 
             signInWithCustomToken, 
             onAuthStateChanged,
-            GoogleAuthProvider,         // ¡NUEVO!
-            signInWithPopup,            // ¡NUEVO!
-            signOut                     // ¡NUEVO!
+            GoogleAuthProvider,
+            signInWithPopup,
+            signOut 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
             getFirestore, 
@@ -212,7 +212,7 @@
             onSnapshot, 
             collection, 
             query,
-            where,                      // ¡NUEVO!
+            where,
             serverTimestamp,
             deleteDoc,
             updateDoc 
@@ -525,6 +525,8 @@
                 });
             }, (error) => {
                 console.error("Error al cargar aulas:", error);
+                // ¡MODIFICADO! Esta es la línea que añadí para ti
+                console.log("ERROR DE FIRESTORE (haz clic en el enlace si aparece):", error.message);
                 showMessage("Error de Base de Datos", "No se pudieron cargar las aulas.");
             });
         }
@@ -686,7 +688,7 @@
             if (!studentNick) {
                 showMessage("Error", "Por favor, introduce tu IDEA o Nick.");
                 return;
-            }
+S            }
 
             showLoader(true);
             try {
