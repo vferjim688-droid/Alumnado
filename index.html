@@ -114,21 +114,16 @@
         // =================================================================
         // CONFIGURACIÓN OBTENIDA DEL ENTORNO DE EJECUCIÓN
         // =================================================================
-        // Las variables se inyectan en el entorno de Canvas
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
         // =================================================================
         // ESTADO GLOBAL Y REFERENCIAS
         // =================================================================
-        let db;
         let auth;
-
-        // --- WATCHDOG IMPLEMENTATION ---
         let initialDataLoaded = false; 
         let watchdogTimer = null;
-        // -------------------------------
-
+        
         // Referencias del DOM
         const profesoradoBtn = document.getElementById('profesoradoBtn');
         const alumnadoBtn = document.getElementById('alumnadoBtn');
@@ -142,7 +137,7 @@
         const modalCloseBtn = document.getElementById('modalCloseBtn');
         
         // =================================================================
-        // FUNCIONES DE UI
+        // FUNCIONES DE UI Y UTILIDAD
         // =================================================================
 
         /** Muestra/Oculta el cargador de pantalla completa. */
@@ -179,101 +174,91 @@
 
         profesoradoBtn.addEventListener('click', () => {
             showLoader(true);
-            // Redirige al archivo de gestión de profesorado (misma carpeta)
             window.location.href = 'profesorado.html';
         });
 
         alumnadoBtn.addEventListener('click', () => {
             showLoader(true);
-            // Redirige al archivo de llave de acceso (misma carpeta)
             window.location.href = 'llave_acceso.html';
         });
 
 
         // =================================================================
-        // FUNCIÓN PRINCIPAL DE INICIALIZACIÓN
+        // FUNCIÓN PRINCIPAL DE INICIALIZACIÓN CON LÓGICA ROBUSTA
         // =================================================================
 
         window.onload = async () => {
             showLoader(true);
             statusMessage.textContent = 'Verificando configuración de acceso...';
 
-            // --- WATCHDOG IMPLEMENTATION ---
-            // Si la carga inicial no se completa en 5 segundos, se fuerza un error y se habilita.
+            // --- WATCHDOG IMPLEMENTATION: Si falla la inicialización o tarda, forzamos la habilitación ---
             watchdogTimer = setTimeout(() => {
                 if (!initialDataLoaded) {
-                    console.warn("Watchdog: La carga inicial tardó demasiado. Forzando habilitación.");
-                    statusMessage.textContent = 'La verificación de la red ha fallado. Habilitando acceso manual.';
+                    console.warn("Watchdog: La carga inicial tardó demasiado (5s). Forzando habilitación.");
+                    statusMessage.textContent = 'Fallo de conexión o configuración. Habilitando acceso manual.';
                     statusMessage.classList.remove('text-indigo-600');
                     statusMessage.classList.add('text-red-600');
+                    
+                    // Aseguramos que se habilita incluso si el código principal se atascó
+                    initialDataLoaded = true; 
                     enableButtons();
                     showLoader(false);
                 }
-            }, 5000); // 5 segundos de espera máxima
-            // -------------------------------
+            }, 5000); 
 
-            // 1. Inicializar Firebase
             try {
+                // 1. Inicializar Firebase
                 if (Object.keys(firebaseConfig).length === 0) {
                     throw new Error("Error: Configuración de Firebase ausente.");
                 }
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
-                // No necesitamos `db` para esta página, pero inicializamos auth.
                 setLogLevel('Debug');
-            } catch (error) {
-                clearTimeout(watchdogTimer);
-                console.error("Error al inicializar Firebase:", error);
-                showMessage("Error de Configuración", "No se pudo conectar. Revisa la consola para detalles de Firebase.");
-                showLoader(false);
-                return;
-            }
+                
+                // 2. Comprobar Token de Profesorado (Intento de Redirección)
+                if (initialAuthToken) {
+                    try {
+                        // Intenta autenticar con el token personalizado
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        
+                        // Éxito: marcamos la carga y redirigimos
+                        initialDataLoaded = true; // Deshabilita el watchdog
+                        clearTimeout(watchdogTimer);
+                        statusMessage.textContent = 'Token de profesor detectado. Redirigiendo a gestión...';
+                        
+                        // Pequeño retardo para que el usuario vea el mensaje
+                        setTimeout(() => {
+                            window.location.href = 'profesorado.html';
+                        }, 100); 
+                        
+                        return; // *** DETIENE LA EJECUCIÓN: Evita que el `finally` habilite los botones. ***
+                    } catch (error) {
+                        // El token falló (inválido/expirado). Caemos al flujo normal de selección.
+                        console.warn("Token de profesor inválido o expirado. Permitiendo selección manual.", error.code);
+                    }
+                }
+                
+                // 3. Autenticación Anónima (Necesario para el entorno Canvas/Firestore)
+                // Esto asegura que `auth.currentUser` no es null y las reglas de seguridad permiten la carga.
+                await signInAnonymously(auth);
 
-            // 2. Comprobar Token de Profesorado
-            // Solo probamos la autenticación de profesorado si hay un token.
-            if (initialAuthToken) {
-                try {
-                    // Intenta iniciar sesión con el token personalizado (profesor)
-                    await signInWithCustomToken(auth, initialAuthToken);
-                    
-                    // Si el token funciona, asumimos que debe ir al panel de profesorado
-                    console.log("Token de profesor detectado y válido. Redirigiendo...");
-                    statusMessage.textContent = 'Token de profesor detectado. Redirigiendo a gestión...';
-                    
-                    // Marcar carga como completa antes de la redirección
+            } catch (error) {
+                // Captura errores de inicialización (ej. config inválida, error grave de red)
+                console.error("Error FATAL de inicialización:", error);
+                showMessage("Error Grave", error.message || "No se pudo iniciar la aplicación. Revisa la consola.");
+            
+            } finally {
+                // 4. Finalización y habilitación
+                // Este bloque se ejecuta SIEMPRE, a menos que el `return` de la redirección lo haya evitado.
+                
+                if (!initialDataLoaded) { // Solo si el watchdog no se activó o la redirección no ocurrió
                     initialDataLoaded = true;
                     clearTimeout(watchdogTimer);
-
-                    setTimeout(() => {
-                        window.location.href = 'profesorado.html';
-                    }, 500);
-                    return;
-
-                } catch (error) {
-                    // Si el token existe pero falla (ej. expirado o inválido)
-                    console.warn("Token de profesor inválido:", error.code);
-                    // Caemos al caso de selección de rol
+                    
+                    enableButtons();
+                    showLoader(false);
                 }
             }
-
-            // 3. Autenticación Anónima (Para establecer la sesión de Canvas)
-            try {
-                 // Intentamos un sign-in anónimo para asegurar que la sesión de Canvas está activa
-                 await signInAnonymously(auth);
-            } catch (error) {
-                // Si la autenticación anónima falla, es un problema grave de configuración de Auth.
-                console.error("Error en signInAnonymously:", error);
-                statusMessage.textContent = 'La autenticación anónima ha fallado. Revisa las reglas de Firebase Auth.';
-            }
-
-
-            // 4. Finalización y habilitación de botones
-            // Si llegamos aquí, no hay redirección automática, y habilitamos los botones.
-            initialDataLoaded = true;
-            clearTimeout(watchdogTimer);
-            
-            enableButtons();
-            showLoader(false);
         };
 
     </script>
