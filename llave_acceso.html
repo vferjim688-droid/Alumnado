@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AulaIA - Llave de Acceso</title>
+    <!-- Carga de Tailwind CSS para un diseño limpio y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de la fuente Inter -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f0f4f8; 
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #app-container {
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 400px;
+            width: 100%;
+            border-top: 5px solid #10b981; /* Color emerald */
+        }
+        #loader {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        #loader.active { opacity: 1; visibility: visible; }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
+            border-top: 4px solid #ffffff; width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- Contenedor Principal de la App -->
+    <div id="app-container">
+        <h1 class="text-3xl font-extrabold text-center text-gray-800 mb-2">AulaIA</h1>
+        <h2 class="text-xl font-semibold text-center text-emerald-600 mb-8">Llave de Acceso</h2>
+
+        <form id="student-login-form" class="space-y-6">
+
+            <!-- Selección de Aula -->
+            <div>
+                <label for="classroom-select" class="block text-sm font-medium text-gray-700 mb-1">Selecciona tu Aula/Tema</label>
+                <select id="classroom-select" required 
+                        class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+                    <option value="" disabled selected>Cargando aulas disponibles...</option>
+                </select>
+                <p id="loading-status" class="text-xs text-gray-500 mt-2">Asegúrate de que tu profesor ha creado el aula.</p>
+            </div>
+
+            <!-- Introducir Nick/IDEA -->
+            <div>
+                <label for="student-nick" class="block text-sm font-medium text-gray-700 mb-1">Tu IDEA o Nick</label>
+                <input type="text" id="student-nick" placeholder="Ej: maria2025" required
+                       class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500">
+                <p class="text-xs text-gray-500 mt-2">Introduce la clave exacta que te proporcionó tu profesor.</p>
+            </div>
+            
+            <!-- Botón de Acceso -->
+            <button type="submit" id="access-btn" disabled
+                    class="w-full py-3 px-4 rounded-lg text-white font-semibold bg-gray-400 cursor-not-allowed transition duration-150">
+                Acceder a la Actividad
+            </button>
+        </form>
+
+        <p id="logout-link" class="mt-6 text-center text-sm text-gray-500 hover:text-gray-700 cursor-pointer" onclick="window.location.href='index.html'">
+            &larr; Volver al inicio / Cambiar de Usuario
+        </p>
+
+    </div>
+
+    <!-- Loader -->
+    <div id="loader"><div class="spinner"></div></div>
+
+    <!-- Modal de Mensajes (Reemplaza a alert()) -->
+    <div id="message-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full border-t-4 border-red-500">
+            <h3 id="message-title" class="text-xl font-bold mb-4 text-gray-800"></h3>
+            <p id="message-body" class="text-gray-600"></p>
+            <button id="message-close-btn" class="mt-6 w-full bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-700 transition">Entendido</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Importaciones de Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, onSnapshot, collection, query, 
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración de logs detallados
+        setLogLevel('debug'); 
+
+        // --- CONSTANTES ---
+        // URL de la aplicación de actividad donde el alumno realizará el resumen
+        const ACTIVIDAD_APP_URL = "https://vferjim688-droid.github.io/Actividad-de-Resumen/"; 
+        
+        // Variables Globales de Canvas (Requeridas)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // Inicialización de Firebase
+        let app, auth, db;
+
+        // Elementos DOM
+        const classroomSelect = document.getElementById('classroom-select');
+        const studentNickInput = document.getElementById('student-nick');
+        const studentLoginForm = document.getElementById('student-login-form');
+        const accessBtn = document.getElementById('access-btn');
+        const loadingStatus = document.getElementById('loading-status');
+
+        // --- FUNCIONES DE UTILIDAD ---
+
+        function showLoader(show) {
+            document.getElementById('loader').classList.toggle('active', show);
+        }
+
+        // Callback opcional: se ejecuta después de cerrar el modal
+        function showMessage(title, body) {
+            document.getElementById('message-title').textContent = title;
+            document.getElementById('message-body').innerHTML = body;
+            const modal = document.getElementById('message-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            const closeBtn = document.getElementById('message-close-btn');
+            const handleClose = () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                closeBtn.removeEventListener('click', handleClose);
+            };
+            closeBtn.addEventListener('click', handleClose);
+        }
+        
+        // --- LÓGICA DE FIREBASE ---
+
+        async function initFirebaseAndAuth() {
+            if (Object.keys(firebaseConfig).length === 0) {
+                 showMessage("Error de Configuración", "La configuración de Firebase no está disponible.");
+                 return;
+            }
+            
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            // Intentar inicio de sesión inicial con token o de forma anónima
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                loadClassrooms();
+
+            } catch (e) {
+                console.error("Error al iniciar sesión en la llave de acceso:", e);
+                showMessage("Error de Sesión", "No se pudo iniciar la sesión de forma anónima. Inténtalo de nuevo.");
+            }
+        }
+
+        function loadClassrooms() {
+            // Referencia a la colección pública de aulas (Mismo path que usa el profesor)
+            const classroomsQuery = query(
+                collection(db, `artifacts/${appId}/public/data/classrooms`)
+            );
+
+            // Listener en tiempo real
+            onSnapshot(classroomsQuery, (snapshot) => {
+                classroomSelect.innerHTML = '<option value="" disabled selected>Selecciona tu Aula...</option>';
+                
+                if (snapshot.empty) {
+                    loadingStatus.textContent = "No hay aulas disponibles en este momento.";
+                    accessBtn.disabled = true;
+                    accessBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700', 'cursor-pointer');
+                    accessBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const classroom = doc.data();
+                    const docId = doc.id;
+                    
+                    const option = document.createElement('option');
+                    option.value = docId;
+                    option.textContent = classroom.name;
+                    
+                    // Almacenamos la lista de alumnos como data-attribute JSON para validación
+                    option.dataset.studentList = JSON.stringify(classroom.studentList || []);
+                    
+                    classroomSelect.appendChild(option);
+                });
+                
+                loadingStatus.textContent = "Aulas cargadas con éxito.";
+                accessBtn.disabled = false;
+                accessBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700', 'cursor-pointer');
+                accessBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+
+            }, (error) => {
+                console.error("Error al cargar aulas:", error);
+                loadingStatus.textContent = "Error al cargar las aulas. Revisa la consola.";
+                accessBtn.disabled = true;
+            });
+        }
+        
+        // --- MANEJADOR DE ENVÍO ---
+
+        studentLoginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const selectedAulaId = classroomSelect.value;
+            const studentNick = studentNickInput.value.trim();
+            const selectedOption = classroomSelect.options[classroomSelect.selectedIndex];
+
+            if (!selectedAulaId) {
+                showMessage("Error de Aula", "Por favor, selecciona un aula de la lista.");
+                return;
+            }
+            if (!studentNick) {
+                showMessage("Error de Nick", "Por favor, introduce tu IDEA o Nick.");
+                return;
+            }
+
+            showLoader(true);
+            try {
+                // 1. Obtener la lista de alumnos (ya la tenemos en el 'dataset' del option)
+                // Se usa el JSON.parse() porque lo guardamos como string en el HTML
+                const studentList = JSON.parse(selectedOption.dataset.studentList);
+
+                // 2. Comprobar si el nick está autorizado (comparación sin distinción de mayúsculas/minúsculas)
+                const isStudentAuthorized = studentList.some(nick => nick.toLowerCase() === studentNick.toLowerCase());
+
+                if (isStudentAuthorized) {
+                    // 3. ¡Autorizado! Construir la URL y redirigir
+                    if (!ACTIVIDAD_APP_URL) {
+                         throw new Error("La URL de la aplicación de actividad (ACTIVIDAD_APP_URL) no está configurada.");
+                    }
+                    // CRÍTICO: Enviamos el ID del aula y el Nick del alumno para que la actividad pueda cargar el texto y registrar el resumen.
+                    const url = `${ACTIVIDAD_APP_URL}?aulaId=${selectedAulaId}&alumnoId=${encodeURIComponent(studentNick)}`;
+                    
+                    showMessage("Acceso Concedido", "Redirigiendo a tu actividad. ¡Mucha suerte!");
+                    
+                    setTimeout(() => { 
+                        window.location.href = url; 
+                    }, 1500);
+
+                } else {
+                    // 4. No autorizado
+                    throw new Error("Tu IDEA o Nick no está en la lista de esta aula. Contacta con tu profesor.");
+                }
+
+            } catch (error) {
+                console.error("Error en el login de alumno:", error);
+                showMessage("Acceso Denegado", error.message);
+            } finally {
+                showLoader(false);
+            }
+        });
+
+        // Iniciar la aplicación
+        window.onload = initFirebaseAndAuth;
+
+    </script>
+</body>
+</html>
