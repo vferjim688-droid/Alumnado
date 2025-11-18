@@ -18,7 +18,6 @@
             padding: 1rem;
         }
         .card { max-width: 500px; width: 100%; }
-        /* Estilos para que los botones parezcan activos de inmediato */
         .btn-primary { 
             background-color: #4f46e5; color: white; transition: background-color 0.2s; 
             box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.1);
@@ -28,7 +27,6 @@
             background-color: #f0f4ff; color: #4f46e5; border: 1px solid #c7d2fe; transition: background-color 0.2s; 
         }
         .btn-secondary:hover { background-color: #e0e7ff; }
-        /* Loader simple */
         #loader {
             position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 50;
         }
@@ -38,13 +36,11 @@
 </head>
 <body>
 
-    <!-- Tarjeta Principal de Selección de Rol -->
     <div id="role-selection" class="card bg-white p-8 rounded-xl shadow-2xl text-center">
         <h1 class="text-4xl font-extrabold text-gray-800 mb-2">Bienvenido a AulaIA</h1>
         <p class="text-lg text-gray-500 mb-8">Selecciona tu perfil para continuar.</p>
 
         <div class="space-y-4">
-            <!-- Botón de Acceso Profesorado -->
             <button id="profesoradoBtn" class="btn-primary w-full py-4 rounded-xl text-xl font-semibold flex items-center justify-center space-x-3">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 2a5 5 0 0 0-5 5v3H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2V7a5 5 0 0 0-5-5z"></path>
@@ -54,7 +50,6 @@
                 <span>Acceso Profesorado</span>
             </button>
 
-            <!-- Botón de Acceso Alumnado -->
             <button id="alumnadoBtn" class="btn-secondary w-full py-4 rounded-xl text-xl font-semibold flex items-center justify-center space-x-3">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -70,7 +65,6 @@
         <p class="text-xs text-gray-400 mt-6 text-center">Desarrollado para IES Los Carabelas.</p>
     </div>
 
-    <!-- Loader -->
     <div id="loader">
         <div class="flex flex-col items-center">
             <div class="spinner"></div>
@@ -79,6 +73,7 @@
     </div>
 
     <script>
+        // Funcionalidad de Redirección
         const profesoradoBtn = document.getElementById('profesoradoBtn');
         const alumnadoBtn = document.getElementById('alumnadoBtn');
         const loader = document.getElementById('loader');
