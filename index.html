@@ -4,133 +4,101 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AulaIA - Selección de Rol</title>
+    <!-- Carga de Tailwind CSS y Fuente -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
-        .view { display: none; }
-        .card { max-width: 500px; }
-        .btn-primary { background-color: #4f46e5; color: white; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn-primary:hover:not(:disabled) { background-color: #4338ca; }
-        .btn-secondary { background-color: #f0f4ff; color: #4f46e5; border: 1px solid #c7d2fe; transition: 0.2s; }
-        .btn-secondary:hover:not(:disabled) { background-color: #e0e7ff; }
-        button:disabled { cursor: not-allowed; opacity: 0.6; filter: grayscale(100%); }
-        #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 50; }
-        #loader.hidden { display: none; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f7f9fb; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            padding: 1rem;
+        }
+        .card { max-width: 500px; width: 100%; }
+        /* Estilos para que los botones parezcan activos de inmediato */
+        .btn-primary { 
+            background-color: #4f46e5; color: white; transition: background-color 0.2s; 
+            box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary:hover { background-color: #4338ca; }
+        .btn-secondary { 
+            background-color: #f0f4ff; color: #4f46e5; border: 1px solid #c7d2fe; transition: background-color 0.2s; 
+        }
+        .btn-secondary:hover { background-color: #e0e7ff; }
+        /* Loader simple */
+        #loader {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 50;
+        }
         .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body>
 
-    <!-- Tarjeta de Selección -->
-    <div id="role-selection" class="card bg-white p-8 rounded-xl shadow-2xl w-full text-center">
+    <!-- Tarjeta Principal de Selección de Rol -->
+    <div id="role-selection" class="card bg-white p-8 rounded-xl shadow-2xl text-center">
         <h1 class="text-4xl font-extrabold text-gray-800 mb-2">Bienvenido a AulaIA</h1>
         <p class="text-lg text-gray-500 mb-8">Selecciona tu perfil para continuar.</p>
 
         <div class="space-y-4">
-            <button id="profesoradoBtn" disabled class="btn-primary w-full py-4 rounded-xl text-xl font-semibold flex items-center justify-center space-x-3">
+            <!-- Botón de Acceso Profesorado -->
+            <button id="profesoradoBtn" class="btn-primary w-full py-4 rounded-xl text-xl font-semibold flex items-center justify-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2a5 5 0 0 0-5 5v3H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2V7a5 5 0 0 0-5-5z"></path>
+                    <line x1="12" y1="17" x2="12" y2="22"></line>
+                    <line x1="9" y1="22" x2="15" y2="22"></line>
+                </svg>
                 <span>Acceso Profesorado</span>
             </button>
-            <button id="alumnadoBtn" disabled class="btn-secondary w-full py-4 rounded-xl text-xl font-semibold flex items-center justify-center space-x-3">
+
+            <!-- Botón de Acceso Alumnado -->
+            <button id="alumnadoBtn" class="btn-secondary w-full py-4 rounded-xl text-xl font-semibold flex items-center justify-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
                 <span>Acceso Alumnado</span>
             </button>
         </div>
 
-        <p id="statusMessage" class="mt-6 text-indigo-600 font-medium">Iniciando sistema...</p>
-        <p class="text-xs text-gray-400 mt-6">IES Las Carabelas</p>
+        <p id="statusMessage" class="mt-6 text-green-600 font-medium">Sistema listo. Elige tu perfil.</p>
+        <p class="text-xs text-gray-400 mt-6 text-center">Desarrollado para IES Los Carabelas.</p>
     </div>
 
-    <!-- Modal Mensajes -->
-    <div id="messageModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full">
-            <h3 id="modalTitle" class="text-xl font-bold mb-2 text-gray-800"></h3>
-            <p id="modalBody" class="text-gray-600 mb-4"></p>
-            <button id="modalCloseBtn" class="w-full bg-indigo-600 text-white py-2 rounded-lg">Aceptar</button>
+    <!-- Loader -->
+    <div id="loader">
+        <div class="flex flex-col items-center">
+            <div class="spinner"></div>
+            <p class="text-white text-lg mt-3">Redirigiendo...</p>
         </div>
     </div>
 
-    <div id="loader" class="hidden"><div class="spinner"></div></div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
-        // --- CONFIGURACIÓN REAL (RESTAURADA) ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyCrZRRrK2pV8-qgbv4SkutKE2LSQFPJE-Q",
-            authDomain: "aulaia-393c0.firebaseapp.com",
-            projectId: "aulaia-393c0",
-            storageBucket: "aulaia-393c0.appspot.com",
-            messagingSenderId: "485029010497",
-            appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
-        };
-
-        // --- ESTADO ---
-        let app, auth;
-        let initialDataLoaded = false;
-        let watchdogTimer = null;
-
+    <script>
         const profesoradoBtn = document.getElementById('profesoradoBtn');
         const alumnadoBtn = document.getElementById('alumnadoBtn');
-        const statusMessage = document.getElementById('statusMessage');
         const loader = document.getElementById('loader');
-        const messageModal = document.getElementById('messageModal');
 
-        function enableButtons() {
-            profesoradoBtn.disabled = false;
-            alumnadoBtn.disabled = false;
-            statusMessage.textContent = 'Sistema listo. Elige tu opción.';
-            statusMessage.classList.remove('text-indigo-600');
-            statusMessage.classList.add('text-green-600');
+        function showLoader(show) {
+            loader.style.display = show ? 'flex' : 'none';
         }
 
-        function showMessage(title, body) {
-            document.getElementById('modalTitle').textContent = title;
-            document.getElementById('modalBody').textContent = body;
-            messageModal.classList.remove('hidden');
-        }
+        profesoradoBtn.addEventListener('click', () => {
+            showLoader(true);
+            window.location.href = 'profesorado.html';
+        });
 
-        document.getElementById('modalCloseBtn').addEventListener('click', () => messageModal.classList.add('hidden'));
-
-        // Navegación simple a los otros archivos HTML
-        profesoradoBtn.addEventListener('click', () => window.location.href = 'profesorado.html');
-        alumnadoBtn.addEventListener('click', () => window.location.href = 'llave_acceso.html');
-
-        window.onload = async () => {
-            // Watchdog de seguridad: si en 4 segundos no carga, forzar habilitación
-            watchdogTimer = setTimeout(() => {
-                if (!initialDataLoaded) {
-                    console.warn("Watchdog activado.");
-                    enableButtons();
-                }
-            }, 4000);
-
-            try {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                
-                // Comprobación rápida de sesión
-                onAuthStateChanged(auth, (user) => {
-                    initialDataLoaded = true;
-                    clearTimeout(watchdogTimer);
-                    
-                    if (user) {
-                        console.log("Usuario detectado:", user.uid);
-                    } else {
-                        // Si no hay usuario, intentamos anónimo para asegurar conexión
-                        signInAnonymously(auth).catch(e => console.warn("Login anónimo falló", e));
-                    }
-                    enableButtons();
-                });
-
-            } catch (error) {
-                console.error("Error fatal:", error);
-                // En caso de error grave, habilitamos botones para no bloquear la UI
-                // (Los errores reales saldrán en la siguiente página)
-                enableButtons(); 
-            }
-        };
+        alumnadoBtn.addEventListener('click', () => {
+            showLoader(true);
+            window.location.href = 'llave_acceso.html';
+        });
+        
+        // Ocultar loader si se vuelve a esta página
+        window.onload = () => showLoader(false);
     </script>
 </body>
 </html>
