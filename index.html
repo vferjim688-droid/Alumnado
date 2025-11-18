@@ -4,263 +4,133 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AulaIA - Selección de Rol</title>
-    <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Carga de la fuente Inter -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
         .view { display: none; }
         .card { max-width: 500px; }
-        
-        /* Estilos de Botón Primario (Profesorado) */
-        .btn-primary {
-            background-color: #4f46e5; color: white; transition: background-color 0.2s;
-            box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-        }
+        .btn-primary { background-color: #4f46e5; color: white; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .btn-primary:hover:not(:disabled) { background-color: #4338ca; }
-
-        /* Estilos de Botón Secundario (Alumnado) */
-        .btn-secondary {
-            background-color: #f0f4ff; color: #4f46e5; border: 1px solid #c7d2fe; transition: background-color 0.2s;
-            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
-        }
+        .btn-secondary { background-color: #f0f4ff; color: #4f46e5; border: 1px solid #c7d2fe; transition: 0.2s; }
         .btn-secondary:hover:not(:disabled) { background-color: #e0e7ff; }
-
-        /* Estilos para deshabilitar botones */
-        button:disabled {
-            cursor: not-allowed;
-            opacity: 0.6;
-            filter: grayscale(10%);
-        }
-
-        /* Estilos del Loader (reutilizado de los otros archivos) */
-        #loader {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.6);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 9999; opacity: 0; visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-        }
-        #loader.active { opacity: 1; visibility: visible; }
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
-            border-top: 4px solid #ffffff; width: 40px; height: 40px;
-            animation: spin 1s linear infinite;
-        }
+        button:disabled { cursor: not-allowed; opacity: 0.6; filter: grayscale(100%); }
+        #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 50; }
+        #loader.hidden { display: none; }
+        .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
-    <!-- Tarjeta Principal de Selección de Rol -->
+    <!-- Tarjeta de Selección -->
     <div id="role-selection" class="card bg-white p-8 rounded-xl shadow-2xl w-full text-center">
         <h1 class="text-4xl font-extrabold text-gray-800 mb-2">Bienvenido a AulaIA</h1>
-        <p class="text-lg text-gray-500 mb-8">Selecciona tu rol para acceder a la plataforma.</p>
+        <p class="text-lg text-gray-500 mb-8">Selecciona tu perfil para continuar.</p>
 
         <div class="space-y-4">
-            <!-- Botón de Acceso Profesorado -->
             <button id="profesoradoBtn" disabled class="btn-primary w-full py-4 rounded-xl text-xl font-semibold flex items-center justify-center space-x-3">
-                <!-- Icono de Profesor (user-tie) -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2a5 5 0 0 0-5 5v3H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2V7a5 5 0 0 0-5-5z"></path>
-                    <line x1="12" y1="17" x2="12" y2="22"></line>
-                    <line x1="9" y1="22" x2="15" y2="22"></line>
-                </svg>
                 <span>Acceso Profesorado</span>
             </button>
-
-            <!-- Botón de Acceso Alumnado -->
             <button id="alumnadoBtn" disabled class="btn-secondary w-full py-4 rounded-xl text-xl font-semibold flex items-center justify-center space-x-3">
-                <!-- Icono de Alumno (user-group) -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
                 <span>Acceso Alumnado</span>
             </button>
         </div>
 
-        <p id="statusMessage" class="mt-6 text-indigo-600 font-medium">Cargando configuración...</p>
-        
-        <p class="text-xs text-gray-400 mt-6 text-center">Desarrollado para IES Los Carabelas.</p>
+        <p id="statusMessage" class="mt-6 text-indigo-600 font-medium">Iniciando sistema...</p>
+        <p class="text-xs text-gray-400 mt-6">IES Las Carabelas</p>
     </div>
 
-    <!-- Modal para Mensajes (reutilizado para errores) -->
-    <div id="messageModal" class="view fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
-        <div class="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4">
-            <h3 id="modalTitle" class="text-xl font-bold text-gray-900 mb-2">Título</h3>
-            <p id="modalBody" class="text-gray-600 mb-4">Cuerpo del mensaje</p>
-            <button id="modalCloseBtn" class="btn-primary w-full py-2 rounded-lg font-medium">Aceptar</button>
+    <!-- Modal Mensajes -->
+    <div id="messageModal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full">
+            <h3 id="modalTitle" class="text-xl font-bold mb-2 text-gray-800"></h3>
+            <p id="modalBody" class="text-gray-600 mb-4"></p>
+            <button id="modalCloseBtn" class="w-full bg-indigo-600 text-white py-2 rounded-lg">Aceptar</button>
         </div>
     </div>
 
-    <!-- Loader Pantalla Completa (reutilizado) -->
-    <div id="loader" class="view">
-        <div class="flex flex-col items-center">
-            <div class="spinner"></div>
-            <p class="text-white text-lg mt-3">Verificando acceso...</p>
-        </div>
-    </div>
+    <div id="loader" class="hidden"><div class="spinner"></div></div>
 
-    <!-- Script de Firebase y Lógica -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, onAuthStateChanged, setLogLevel, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // =================================================================
-        // CONFIGURACIÓN OBTENIDA DEL ENTORNO DE EJECUCIÓN
-        // =================================================================
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
-        // =================================================================
-        // ESTADO GLOBAL Y REFERENCIAS
-        // =================================================================
-        let auth;
-        let initialDataLoaded = false; 
+        // --- CONFIGURACIÓN REAL (RESTAURADA) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCrZRRrK2pV8-qgbv4SkutKE2LSQFPJE-Q",
+            authDomain: "aulaia-393c0.firebaseapp.com",
+            projectId: "aulaia-393c0",
+            storageBucket: "aulaia-393c0.appspot.com",
+            messagingSenderId: "485029010497",
+            appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
+        };
+
+        // --- ESTADO ---
+        let app, auth;
+        let initialDataLoaded = false;
         let watchdogTimer = null;
-        
-        // Referencias del DOM
+
         const profesoradoBtn = document.getElementById('profesoradoBtn');
         const alumnadoBtn = document.getElementById('alumnadoBtn');
         const statusMessage = document.getElementById('statusMessage');
         const loader = document.getElementById('loader');
-        
-        // Referencias del Modal
-        const modal = document.getElementById('messageModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalBody = document.getElementById('modalBody');
-        const modalCloseBtn = document.getElementById('modalCloseBtn');
-        
-        // =================================================================
-        // FUNCIONES DE UI Y UTILIDAD
-        // =================================================================
+        const messageModal = document.getElementById('messageModal');
 
-        /** Muestra/Oculta el cargador de pantalla completa. */
-        function showLoader(show) {
-            loader.classList.toggle('active', show);
-        }
-
-        /** Muestra el modal de mensaje. */
-        function showMessage(title, body) {
-            modalTitle.textContent = title;
-            modalBody.textContent = body;
-            modal.classList.remove('view');
-            modal.style.display = 'flex';
-        }
-
-        /** Habilita los botones y actualiza el mensaje de estado. */
         function enableButtons() {
             profesoradoBtn.disabled = false;
             alumnadoBtn.disabled = false;
-            statusMessage.textContent = 'Selecciona tu rol para continuar.';
+            statusMessage.textContent = 'Sistema listo. Elige tu opción.';
             statusMessage.classList.remove('text-indigo-600');
             statusMessage.classList.add('text-green-600');
         }
 
-        // Manejador del botón Cerrar/Aceptar del modal
-        modalCloseBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-            modal.classList.add('view');
-        });
+        function showMessage(title, body) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalBody').textContent = body;
+            messageModal.classList.remove('hidden');
+        }
 
-        // =================================================================
-        // LISTENERS DE REDIRECCIÓN
-        // =================================================================
+        document.getElementById('modalCloseBtn').addEventListener('click', () => messageModal.classList.add('hidden'));
 
-        profesoradoBtn.addEventListener('click', () => {
-            showLoader(true);
-            window.location.href = 'profesorado.html';
-        });
-
-        alumnadoBtn.addEventListener('click', () => {
-            showLoader(true);
-            window.location.href = 'llave_acceso.html';
-        });
-
-
-        // =================================================================
-        // FUNCIÓN PRINCIPAL DE INICIALIZACIÓN CON LÓGICA ROBUSTA
-        // =================================================================
+        // Navegación simple a los otros archivos HTML
+        profesoradoBtn.addEventListener('click', () => window.location.href = 'profesorado.html');
+        alumnadoBtn.addEventListener('click', () => window.location.href = 'llave_acceso.html');
 
         window.onload = async () => {
-            showLoader(true);
-            statusMessage.textContent = 'Verificando configuración de acceso...';
-
-            // --- WATCHDOG IMPLEMENTATION: Si falla la inicialización o tarda, forzamos la habilitación ---
+            // Watchdog de seguridad: si en 4 segundos no carga, forzar habilitación
             watchdogTimer = setTimeout(() => {
                 if (!initialDataLoaded) {
-                    console.warn("Watchdog: La carga inicial tardó demasiado (5s). Forzando habilitación.");
-                    statusMessage.textContent = 'Fallo de conexión o configuración. Habilitando acceso manual.';
-                    statusMessage.classList.remove('text-indigo-600');
-                    statusMessage.classList.add('text-red-600');
-                    
-                    // Aseguramos que se habilita incluso si el código principal se atascó
-                    initialDataLoaded = true; 
+                    console.warn("Watchdog activado.");
                     enableButtons();
-                    showLoader(false);
                 }
-            }, 5000); 
+            }, 4000);
 
             try {
-                // 1. Inicializar Firebase
-                if (Object.keys(firebaseConfig).length === 0) {
-                    throw new Error("Error: Configuración de Firebase ausente.");
-                }
-                const app = initializeApp(firebaseConfig);
+                app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
-                setLogLevel('Debug');
                 
-                // 2. Comprobar Token de Profesorado (Intento de Redirección)
-                if (initialAuthToken) {
-                    try {
-                        // Intenta autenticar con el token personalizado
-                        await signInWithCustomToken(auth, initialAuthToken);
-                        
-                        // Éxito: marcamos la carga y redirigimos
-                        initialDataLoaded = true; // Deshabilita el watchdog
-                        clearTimeout(watchdogTimer);
-                        statusMessage.textContent = 'Token de profesor detectado. Redirigiendo a gestión...';
-                        
-                        // Pequeño retardo para que el usuario vea el mensaje
-                        setTimeout(() => {
-                            window.location.href = 'profesorado.html';
-                        }, 100); 
-                        
-                        return; // *** DETIENE LA EJECUCIÓN: Evita que el `finally` habilite los botones. ***
-                    } catch (error) {
-                        // El token falló (inválido/expirado). Caemos al flujo normal de selección.
-                        console.warn("Token de profesor inválido o expirado. Permitiendo selección manual.", error.code);
-                    }
-                }
-                
-                // 3. Autenticación Anónima (Necesario para el entorno Canvas/Firestore)
-                // Esto asegura que `auth.currentUser` no es null y las reglas de seguridad permiten la carga.
-                await signInAnonymously(auth);
-
-            } catch (error) {
-                // Captura errores de inicialización (ej. config inválida, error grave de red)
-                console.error("Error FATAL de inicialización:", error);
-                showMessage("Error Grave", error.message || "No se pudo iniciar la aplicación. Revisa la consola.");
-            
-            } finally {
-                // 4. Finalización y habilitación
-                // Este bloque se ejecuta SIEMPRE, a menos que el `return` de la redirección lo haya evitado.
-                
-                if (!initialDataLoaded) { // Solo si el watchdog no se activó o la redirección no ocurrió
+                // Comprobación rápida de sesión
+                onAuthStateChanged(auth, (user) => {
                     initialDataLoaded = true;
                     clearTimeout(watchdogTimer);
                     
+                    if (user) {
+                        console.log("Usuario detectado:", user.uid);
+                    } else {
+                        // Si no hay usuario, intentamos anónimo para asegurar conexión
+                        signInAnonymously(auth).catch(e => console.warn("Login anónimo falló", e));
+                    }
                     enableButtons();
-                    showLoader(false);
-                }
+                });
+
+            } catch (error) {
+                console.error("Error fatal:", error);
+                // En caso de error grave, habilitamos botones para no bloquear la UI
+                // (Los errores reales saldrán en la siguiente página)
+                enableButtons(); 
             }
         };
-
     </script>
 </body>
 </html>
