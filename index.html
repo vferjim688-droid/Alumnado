@@ -182,8 +182,8 @@
         import { 
             getAuth, 
             signInAnonymously, 
-            signInWithRedirect,         // ¡CAMBIO: Usamos Redirect!
-            getRedirectResult,          // ¡CAMBIO: Para capturar el login!
+            signInWithRedirect,         
+            getRedirectResult,          
             onAuthStateChanged,
             GoogleAuthProvider,
             signOut 
@@ -309,41 +309,51 @@
                 }
             } catch (error) {
                 console.error("Error en redirect result:", error);
-                showMessage("Error de Acceso", error.message);
+                if (error.code !== 'auth/redirect-cancelled-by-user') {
+                    showMessage("Error de Acceso", error.message);
+                }
             }
         }
-        checkRedirectResult(); // Ejecutar al inicio
-
-        // 2. Listener de Auth
-        onAuthStateChanged(auth, async (user) => {
-            currentUser = user;
-            if (user) {
-                if (user.email) {
-                    if (user.email.endsWith(TEACHER_DOMAIN)) {
-                        setRole('teacher');
+        // Ejecutamos checkRedirectResult y luego onAuthStateChanged
+        // Esto asegura que si volvemos de Google, se procese antes que el listener normal
+        checkRedirectResult().then(() => {
+             // 2. Listener de Auth
+             onAuthStateChanged(auth, async (user) => {
+                currentUser = user;
+                if (user) {
+                    if (user.email) {
+                        if (user.email.endsWith(TEACHER_DOMAIN)) {
+                            setRole('teacher');
+                        } else {
+                            // Caso raro si getRedirectResult falló pero hay sesión
+                            await signOut(auth);
+                            showView('role');
+                            showMessage("Acceso Denegado", `Cuenta no permitida.`);
+                        }
+                    } else if (user.isAnonymous && currentRole === 'student') {
+                        // Ya está en modo alumno
                     } else {
-                        // Caso raro si getRedirectResult falló pero hay sesión
-                        await signOut(auth);
-                        showView('role');
-                        showMessage("Acceso Denegado", `Cuenta no permitida.`);
+                        // Quizás volvió de un redirect y aún no hemos procesado
+                        // No forzamos 'role' aquí para evitar parpadeos si checkRedirectResult está trabajando
                     }
-                } else if (user.isAnonymous && currentRole === 'student') {
-                    // Ya está en modo alumno
                 } else {
                     showView('role');
                 }
-            } else {
-                showView('role');
-            }
-            // Ocultar loader inicial si sigue visible
-            if (views.authLoading.style.display === 'block') showView('role');
+                // Ocultar loader inicial si sigue visible
+                if (views.authLoading.style.display === 'block') {
+                     if(!user) showView('role'); 
+                     // Si hay user, setRole ya habrá cambiado la vista
+                }
+            });
         });
+
 
         // 3. Botón Login Profesor (USANDO REDIRECT)
         document.getElementById('teacher-login-btn').addEventListener('click', () => {
+            showLoader(true); // Mostrar loader mientras redirige
             const provider = new GoogleAuthProvider();
             provider.setCustomParameters({ 'hd': 'g.educaand.es' });
-            signInWithRedirect(auth, provider); // <-- La redirección
+            signInWithRedirect(auth, provider); 
         });
 
         // Botón Alumno
