@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AulaIA - Panel de Profesor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .view { display: none; }
+        #loader {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; opacity: 0; visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        #loader.active { opacity: 1; visibility: visible; }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
+            border-top: 4px solid #ffffff; width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- Contenedor principal -->
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-6xl">
+        
+        <!-- Encabezado -->
+        <header class="flex justify-between items-center mb-6 p-4 bg-white shadow-lg rounded-xl">
+            <h1 class="text-3xl font-bold text-green-700 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 mr-2 text-blue-500"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.03 60.03 0 0 0-1.897.668 1.05 1.05 0 0 0-.3 1.09c.4.453 1.066.82 2.15 1.43 1.444.863 2.857 1.482 4.04 1.802 1.346.345 2.572.484 3.533.484 2.801 0 5.641-.79 9.358-2.576a1.05 1.05 0 0 0-.3-1.09c-.4-.453-1.066-.82-2.15-1.43-1.444-.863-2.857-1.482-4.04-1.802-1.346-.345-2.572-.484-3.533-.484-2.801 0-5.641.79-9.358 2.576Z" /></svg>
+                Panel de Profesor
+            </h1>
+            <div id="user-info" class="text-right">
+                <span id="user-email" class="text-sm text-gray-700 block font-semibold">Cargando perfil...</span>
+                <button id="logout-btn" class="ml-4 bg-red-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-600 transition shadow-sm mt-1">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <!-- Vista de Carga/No Autorizado -->
+        <div id="auth-loading-view" class="view text-center p-10 bg-white rounded-xl shadow-lg" style="display: block;">
+            <h2 class="text-2xl font-semibold text-gray-700">Verificando Credenciales...</h2>
+            <p class="text-gray-500 mt-2">Asegúrate de estar logueado como profesor en <a href="index.html" class="text-blue-500 hover:underline">la página de acceso</a>.</p>
+        </div>
+        
+        <!-- VISTA DE PROFESOR (HUB) -->
+        <div id="teacher-hub-view" class="view grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-1 space-y-4">
+                <div class="bg-white p-6 shadow-xl rounded-xl border-t-4 border-blue-500">
+                    <h2 class="text-2xl font-bold mb-4 pb-2 text-blue-700">Acciones Rápidas</h2>
+                    <button id="show-create-classroom-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition shadow-md flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                        Crear Nueva Aula
+                    </button>
+                </div>
+                <div class="bg-yellow-50 p-4 border border-yellow-300 rounded-xl">
+                    <p class="text-sm font-bold text-yellow-800 mb-1">URL para Alumnos:</p>
+                    <p class="text-xs text-yellow-700 break-words">Envía a tus alumnos esta URL (la llave de acceso):</p>
+                    <code class="text-xs bg-gray-200 p-1 rounded block mt-2 break-words">https://vferjim688-droid.github.io/llave_acceso.html</code>
+                    <p class="text-xs text-gray-500 mt-2">La actividad de resumen se cargará automáticamente al seleccionar el aula en esa página.</p>
+                </div>
+            </div>
+            <div class="md:col-span-2 space-y-4">
+                <div class="bg-white p-6 shadow-xl rounded-xl border-t-4 border-green-500">
+                    <h2 class="text-2xl font-bold mb-4 pb-2 text-gray-800">Mis Aulas Creadas</h2>
+                    <div id="teacher-classrooms-list" class="space-y-4">
+                        <p class="text-gray-500">Cargando aulas...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- VISTA DE PROFESOR (CREAR/EDITAR) -->
+        <div id="teacher-create-view" class="view bg-white p-6 shadow-xl rounded-xl max-w-4xl mx-auto border-t-4 border-blue-500">
+            <button id="back-to-hub-btn" class="mb-4 text-sm text-blue-600 hover:underline flex items-center">&larr; Volver al Panel</button>
+            <h2 id="create-view-title" class="text-3xl font-bold mb-6 text-blue-700">Crear Nueva Aula</h2>
+            <form id="create-classroom-form" class="space-y-6">
+                <!-- Nombre del Aula -->
+                <div>
+                    <label for="classroom-name" class="block text-sm font-medium text-gray-700 mb-1">Nombre del Aula / Tema</label>
+                    <input type="text" id="classroom-name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: Historia de Roma" required>
+                </div>
+                <!-- Lista de Alumnos -->
+                <div>
+                    <label for="classroom-students" class="block text-sm font-medium text-gray-700 mb-1">IDEAs o Nicks de Alumnos (1 por línea)</label>
+                    <p class="text-xs text-gray-500 mb-2">Introduce las claves de acceso exactas de tus alumnos.</p>
+                    <textarea id="classroom-students" rows="6" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="idea_alumno1&#10;nick_alumno2&#10;idea_alumno3" required></textarea>
+                </div>
+                <!-- Texto para Analizar -->
+                <div>
+                    <label for="classroom-text" class="block text-sm font-medium text-gray-700 mb-1">Texto Base para el Análisis</label>
+                    <p class="text-xs text-gray-500 mb-2">Pega aquí el texto completo del tema o la unidad. Será la fuente para el resumen IA.</p>
+                    <textarea id="classroom-text" rows="12" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Pega aquí el contenido del tema..." required></textarea>
+                </div>
+                <!-- Rúbrica de Evaluación -->
+                <div>
+                    <label for="classroom-rubric" class="block text-sm font-medium text-gray-700 mb-1">Rúbrica de Evaluación (Opcional)</label>
+                    <p class="text-xs text-gray-500 mb-2">Describe los criterios clave para un buen resumen (Ej: "Debe incluir 5 puntos clave y citar 3 fechas.").</p>
+                    <textarea id="classroom-rubric" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Criterios de evaluación para el resumen..."></textarea>
+                </div>
+                <!-- Botón de Guardar -->
+                <button id="create-view-submit-btn" type="submit" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition shadow-lg">
+                    Guardar Aula
+                </button>
+            </form>
+        </div>
+
+    </div> <!-- Fin #app -->
+
+    <!-- Loader -->
+    <div id="loader"><div class="spinner"></div></div>
+
+    <!-- Modales -->
+    <div id="message-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full">
+            <h3 id="message-title" class="text-xl font-bold mb-4 text-gray-800"></h3>
+            <p id="message-body" class="text-gray-600"></p>
+            <button id="message-close-btn" class="mt-6 w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Entendido</button>
+        </div>
+    </div>
+    <div id="confirm-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full">
+            <h3 id="confirm-title" class="text-xl font-bold mb-4 text-red-700"></h3>
+            <p id="confirm-body" class="text-gray-600"></p>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button id="confirm-cancel-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition">Cancelar</button>
+                <button id="confirm-action-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Importaciones de Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, doc, getDoc, addDoc, setDoc, onSnapshot, 
+            collection, query, where, serverTimestamp, deleteDoc, updateDoc,
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración de logs detallados
+        setLogLevel('debug'); 
+
+        // ----------------------------------------------------
+        // CONFIGURACIÓN Y CONSTANTES (Debe coincidir con index.html)
+        // ----------------------------------------------------
+        const RESUMEN_APP_URL = "https://vferjim688-droid.github.io/Actividad-de-Resumen/"; 
+        const TEACHER_DOMAINS = ["@g.educaand.es", "@iescarabelas.com"];
+        
+        // Variables Globales de Canvas (Requeridas)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // Inicialización de Firebase
+        let app, auth, db;
+        let currentUser = null;
+        let currentUserRole = null;
+        let unsubscribeClassrooms = () => {};
+        let currentEditingClassroomId = null;
+        let classroomToDeleteId = null;
+
+        // Elementos DOM
+        const authLoadingView = document.getElementById('auth-loading-view');
+        const teacherHubView = document.getElementById('teacher-hub-view');
+        const teacherCreateView = document.getElementById('teacher-create-view');
+        const teacherClassroomsList = document.getElementById('teacher-classrooms-list');
+        const createClassroomForm = document.getElementById('create-classroom-form');
+        const logoutBtn = document.getElementById('logout-btn');
+        const confirmModal = document.getElementById('confirm-modal');
+
+        // --- AUTENTICACIÓN Y VERIFICACIÓN DE ROL ---
+
+        async function initFirebaseAndAuth() {
+            if (Object.keys(firebaseConfig).length === 0) {
+                 showMessage("Error de Configuración", "La configuración de Firebase no está disponible.");
+                 return;
+            }
+            
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            // Intentar inicio de sesión inicial
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (e) {
+                console.error("Error al intentar iniciar sesión con token/anónimo:", e);
+                // No mostrar error aquí, dejar que onAuthStateChanged lo maneje
+            }
+
+            // Listener de estado de autenticación
+            onAuthStateChanged(auth, async (user) => {
+                authLoadingView.style.display = 'none';
+                currentUser = user;
+                if (user) {
+                    await verifyRole(user.uid, user.email);
+                } else {
+                    // Si no hay usuario, redirigir a la página de inicio para login.
+                    showMessage("Sesión Caducada", "Tu sesión ha expirado o no estás logueado. Redirigiendo al acceso.", () => {
+                        window.location.replace('index.html');
+                    });
+                }
+            });
+        }
+
+        async function verifyRole(uid, email) {
+            const userDocRef = doc(db, 'artifacts', appId, 'users', uid, 'profile', 'data');
+            
+            try {
+                const docSnap = await getDoc(userDocRef);
+                const isTeacherDomain = email && TEACHER_DOMAINS.some(domain => email.toLowerCase().endsWith(domain.toLowerCase()));
+                
+                if (docSnap.exists()) {
+                    currentUserRole = docSnap.data().role;
+                } else {
+                    // Si no existe el perfil, el usuario debe ir a index.html a crearlo.
+                    currentUserRole = 'unknown'; 
+                }
+
+                if (currentUserRole === 'teacher' && isTeacherDomain) {
+                    document.getElementById('user-email').textContent = email;
+                    showView('teacherHub');
+                    loadTeacherClassrooms(email);
+                } else if (currentUserRole === 'student' || !isTeacherDomain) {
+                    // Si es alumno, o es un usuario de Google no permitido, redirigir.
+                    showMessage("Acceso No Autorizado", "Debes acceder como profesor. Redirigiendo al inicio.", () => {
+                         window.location.replace('index.html');
+                    });
+                } else {
+                     // Caso: Rol 'unknown' o error
+                     showMessage("Selección de Rol Requerida", "Debes seleccionar tu rol en la página de acceso. Redirigiendo...", () => {
+                         window.location.replace('index.html');
+                    });
+                }
+
+            } catch (error) {
+                console.error("Error al verificar el rol en Firestore:", error);
+                showMessage("Error de Perfil", "No se pudo cargar tu perfil. Redirigiendo...", () => {
+                    window.location.replace('index.html');
+                });
+            }
+        }
+
+        // --- GESTIÓN DE AULAS (CRUD) ---
+
+        function loadTeacherClassrooms(teacherEmail) {
+            unsubscribeClassrooms();
+            teacherClassroomsList.innerHTML = '<p class="text-gray-500">Cargando aulas...</p>';
+            
+            // Query para obtener solo las aulas creadas por este profesor
+            const classroomsQuery = query(
+                collection(db, `artifacts/${appId}/public/data/classrooms`),
+                where("teacherId", "==", teacherEmail)
+            );
+            
+            unsubscribeClassrooms = onSnapshot(classroomsQuery, (snapshot) => {
+                if (snapshot.empty) {
+                    teacherClassroomsList.innerHTML = '<p class="text-gray-500">Aún no has creado ninguna aula.</p>';
+                    return;
+                }
+                teacherClassroomsList.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const classroom = doc.data();
+                    const docId = doc.id;
+                    const studentCount = classroom.studentList?.length || 0;
+
+                    const classroomEl = document.createElement('div');
+                    classroomEl.className = 'p-4 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 transition flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0';
+                    classroomEl.innerHTML = `
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-lg text-blue-600 truncate">
+                                ${classroom.name} 
+                                <span class="text-xs text-gray-400 font-normal ml-2">(${studentCount} alumnos)</span>
+                            </h4>
+                            <span class="text-xs text-gray-500 block">ID: ${docId.substring(0, 12)}...</span>
+                        </div>
+                        <div class="space-x-2 flex-shrink-0 ml-0 md:ml-4 flex">
+                            <button class="redirect-btn p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition" data-action="redirect" data-id="${docId}" title="Ver Actividad de Alumno"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg></button>
+                            <button class="edit-btn p-2 rounded-full bg-yellow-50 text-yellow-600 hover:bg-yellow-100 transition" data-action="edit" data-id="${docId}" title="Editar Aula"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" /></svg></button>
+                            <button class="delete-btn p-2 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition" data-action="delete" data-id="${docId}" data-name="${classroom.name}" title="Eliminar Aula"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.54 0c-.342.052-.682.107-1.022.166m11.022 0L12 5.281m-2.217.488L12 5.281m0 0L9.783 5.79m2.217 0 2.217.488m0 0a.562.562 0 0 1 .562.562v1.5c0 .31-.252.562-.562.562h-2.217a.562.562 0 0 1-.562-.562v-1.5c0-.31.252-.562.562-.562Zm0 0h-2.217" /></svg></button>
+                        </div>`;
+                    teacherClassroomsList.appendChild(classroomEl);
+                });
+            }, (error) => {
+                console.error("Error al cargar aulas (Firestore):", error);
+                showMessage("Error de Base de Datos", `No se pudieron cargar las aulas: ${error.message}`);
+            });
+        }
+
+        // --- MANEJADORES DE EVENTOS ---
+
+        logoutBtn.addEventListener('click', async () => {
+            showLoader(true);
+            await signOut(auth);
+            // onAuthStateChanged redirigirá a index.html
+        });
+        
+        document.getElementById('show-create-classroom-btn').addEventListener('click', () => {
+            currentEditingClassroomId = null;
+            createClassroomForm.reset();
+            document.getElementById('create-view-title').textContent = 'Crear Nueva Aula';
+            document.getElementById('create-view-submit-btn').textContent = 'Guardar Aula';
+            showView('teacherCreate');
+        });
+        
+        document.getElementById('back-to-hub-btn').addEventListener('click', () => {
+            currentEditingClassroomId = null;
+            createClassroomForm.reset();
+            showView('teacherHub');
+        });
+
+        teacherClassroomsList.addEventListener('click', async (e) => {
+            const target = e.target.closest('[data-action]');
+            if (!target) return;
+
+            const action = target.dataset.action;
+            const classroomId = target.dataset.id;
+            const classroomName = target.dataset.name;
+
+            if (action === 'redirect') {
+                // Redirige al profesor a la URL de la actividad con el ID del aula
+                const url = `${RESUMEN_APP_URL}?aulaId=${classroomId}`;
+                window.open(url, '_blank'); 
+            } else if (action === 'edit') {
+                showLoader(true);
+                try {
+                    const docSnap = await getDoc(doc(db, `artifacts/${appId}/public/data/classrooms`, classroomId));
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        currentEditingClassroomId = classroomId;
+                        document.getElementById('classroom-name').value = data.name || '';
+                        document.getElementById('classroom-students').value = (data.studentList || []).join('\n');
+                        document.getElementById('classroom-text').value = data.sourceText || '';
+                        document.getElementById('classroom-rubric').value = data.rubric || '';
+                        document.getElementById('create-view-title').textContent = 'Editar Aula';
+                        document.getElementById('create-view-submit-btn').textContent = 'Actualizar Aula';
+                        showView('teacherCreate');
+                    }
+                } catch (e) { showMessage("Error", "No se pudo cargar el aula para editar."); }
+                finally { showLoader(false); }
+            } else if (action === 'delete') {
+                classroomToDeleteId = classroomId;
+                document.getElementById('confirm-title').textContent = 'Confirmar Borrado';
+                document.getElementById('confirm-body').textContent = `¿Estás seguro de que quieres borrar el aula "${classroomName}"? Esta acción es irreversible.`;
+                confirmModal.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('confirm-action-btn').addEventListener('click', async () => {
+             confirmModal.classList.add('hidden');
+             if (classroomToDeleteId && currentUser?.email) {
+                showLoader(true);
+                try {
+                    // La regla de seguridad se encarga de verificar que solo el creador (teacherId) puede borrar.
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/classrooms`, classroomToDeleteId));
+                    showMessage("Borrado Exitoso", "El aula ha sido eliminada.");
+                } catch (e) {
+                    console.error("Error borrando:", e);
+                    showMessage("Error de Permiso", "No tienes permisos para borrar esta aula, o la aula ya no existe. Verifica tu sesión.");
+                } finally {
+                    showLoader(false);
+                    classroomToDeleteId = null;
+                }
+             }
+        });
+        document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
+            confirmModal.classList.add('hidden');
+            classroomToDeleteId = null;
+        });
+
+        createClassroomForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('classroom-name').value;
+            const studentsText = document.getElementById('classroom-students').value;
+            const sourceText = document.getElementById('classroom-text').value;
+            const rubric = document.getElementById('classroom-rubric').value;
+            
+            if (!name || !studentsText || !sourceText || !currentUser || !currentUser.email) {
+                showMessage("Error", "Faltan datos obligatorios o la sesión de profesor es inválida.");
+                return;
+            }
+            showLoader(true);
+            try {
+                const data = {
+                    name, 
+                    // Normalizamos la lista de alumnos: limpia espacios y elimina vacíos.
+                    studentList: studentsText.split('\n').map(s => s.trim()).filter(s => s),
+                    sourceText,
+                    rubric: rubric,
+                    teacherId: currentUser.email, // CRÍTICO: Debe ser el email del usuario autenticado
+                    updatedAt: serverTimestamp()
+                };
+                
+                if (currentEditingClassroomId) {
+                    await updateDoc(doc(db, `artifacts/${appId}/public/data/classrooms`, currentEditingClassroomId), data);
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/classrooms`), data);
+                }
+                
+                showMessage("¡Éxito!", "Aula guardada correctamente.", () => showView('teacherHub'));
+                currentEditingClassroomId = null;
+
+            } catch (error) {
+                console.error("Error guardando (posiblemente permiso):", error);
+                showMessage("Error de Base de Datos", `No se pudo guardar/actualizar el aula. Esto puede ser un error de permisos. Detalle: ${error.message}`);
+            } finally { showLoader(false); }
+        });
+
+
+        // --- Funciones de Utilidad ---
+        function showView(viewId) {
+            authLoadingView.style.display = 'none';
+            teacherHubView.style.display = 'none';
+            teacherCreateView.style.display = 'none';
+
+            if (viewId === 'teacherHub') {
+                teacherHubView.style.display = 'grid';
+            } else if (viewId === 'teacherCreate') {
+                teacherCreateView.style.display = 'block';
+            }
+        }
+
+        function showLoader(show) {
+            document.getElementById('loader').classList.toggle('active', show);
+        }
+
+        // Callback opcional: se ejecuta después de cerrar el modal
+        function showMessage(title, body, callback = () => {}) {
+            document.getElementById('message-title').textContent = title;
+            document.getElementById('message-body').innerHTML = body;
+            const modal = document.getElementById('message-modal');
+            modal.classList.remove('hidden');
+
+            const closeBtn = document.getElementById('message-close-btn');
+            
+            // Reemplazar listener para ejecutar el callback solo una vez
+            const handleClose = () => {
+                modal.classList.add('hidden');
+                closeBtn.removeEventListener('click', handleClose);
+                callback();
+            };
+            closeBtn.addEventListener('click', handleClose);
+        }
+
+        // Iniciar la aplicación
+        window.onload = initFirebaseAndAuth;
+
+    </script>
+</body>
+</html>
