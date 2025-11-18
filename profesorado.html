@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AulaIA - Gestión de Aulas (Profesorado)</title>
+    <title>AulaIA - Panel Profesorado</title>
     <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Carga de la fuente Inter -->
@@ -11,481 +11,338 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
         .view { display: none; }
+        .card { max-width: 900px; }
+        .btn-primary { 
+            background-color: #4f46e5; color: white; transition: background-color 0.2s; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary:hover:not(:disabled) { background-color: #4338ca; }
+        .btn-delete { background-color: #ef4444; color: white; }
+        .btn-delete:hover { background-color: #dc2626; }
+        .btn-back { color: #4f46e5; background-color: #eef2ff; transition: background-color 0.2s; }
+        .btn-back:hover:not(:disabled) { background-color: #e0e7ff; }
+
         /* Estilos del Loader */
         #loader {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background-color: rgba(0, 0, 0, 0.6);
             display: flex; align-items: center; justify-content: center;
-            z-index: 9999; opacity: 0; visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 9999; display: none;
         }
-        #loader.active { opacity: 1; visibility: visible; }
         .spinner {
             border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
-            border-top: 4px solid #4f46e5; width: 40px; height: 40px;
+            border-top: 4px solid #ffffff; width: 40px; height: 40px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Estilos de botones */
-        .btn-primary {
-            background-color: #4f46e5; color: white; transition: background-color 0.2s;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        .btn-primary:hover { background-color: #4338ca; }
-        .btn-danger {
-            background-color: #ef4444; color: white; transition: background-color 0.2s;
-        }
-        .btn-danger:hover { background-color: #dc2626; }
-
-        /* Estilos de Modal */
-        #messageModal {
-            transition: opacity 0.3s, visibility 0.3s;
-        }
     </style>
 </head>
-<body class="p-4 sm:p-8">
+<body class="p-4">
 
-    <!-- Encabezado y título principal -->
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Gestión de Aulas AulaIA</h1>
-        <p class="text-gray-500 mb-6">Panel de control para profesorado. Crea, edita y gestiona las aulas y sus listas de alumnos.</p>
+    <!-- Contenedor Principal -->
+    <div class="card mx-auto bg-white p-6 rounded-xl shadow-2xl mt-4 mb-8">
+        <button id="backBtn" class="btn-back px-3 py-1 rounded-full text-sm font-medium mb-6 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Volver a Selección
+        </button>
 
-        <!-- Sección de Creación de Aula -->
-        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Crear o Editar Aula</h2>
-            <form id="aulaForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div class="md:col-span-1">
-                    <label for="aulaName" class="block text-sm font-medium text-gray-700 mb-1">Nombre del Aula</label>
-                    <input type="text" id="aulaName" placeholder="Ej: 1º ESO A - Tecnología" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">Gestión de Aulas</h1>
+        <p class="text-sm text-gray-500 mb-6">Tu ID de Profesor: <span id="userIdDisplay" class="font-mono text-indigo-600">Cargando...</span></p>
+
+        <!-- Formulario para Nueva Aula -->
+        <div class="bg-indigo-50 p-4 rounded-lg mb-8">
+            <h2 class="text-xl font-semibold text-indigo-800 mb-3">Crear / Editar Aula</h2>
+            <form id="aulaForm" class="space-y-4">
+                <input type="hidden" id="aulaId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="aulaName" class="block text-sm font-medium text-gray-700">Nombre del Aula (Ej: 1º Bach B)</label>
+                        <input type="text" id="aulaName" class="mt-1 w-full p-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    <div>
+                        <label for="alumnosNicks" class="block text-sm font-medium text-gray-700">IDs/Nicks de Alumnos (separados por coma)</label>
+                        <input type="text" id="alumnosNicks" placeholder="Ej: Juan, María, 12345678" class="mt-1 w-full p-2 border border-gray-300 rounded-md" required>
+                    </div>
                 </div>
-                <div class="md:col-span-1">
-                    <label for="studentList" class="block text-sm font-medium text-gray-700 mb-1">Lista de Alumnos (Separados por coma)</label>
-                    <input type="text" id="studentList" placeholder="Ej: NICK001,NICK002,IDEA012" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
-                </div>
-                <div class="md:col-span-1 flex space-x-2">
-                    <button type="submit" id="saveButton" class="btn-primary flex-1 py-2 rounded-lg font-medium">
-                        Crear Aula
-                    </button>
-                    <button type="button" id="cancelEditButton" class="bg-gray-400 text-white py-2 px-3 rounded-lg font-medium hidden hover:bg-gray-50 transition-colors">
-                        Cancelar Edición
-                    </button>
-                </div>
+                <button type="submit" id="saveBtn" class="btn-primary px-4 py-2 rounded-lg font-medium">Guardar Aula</button>
             </form>
-            <p id="editStatus" class="mt-3 text-sm text-indigo-600 hidden">Editando aula: <span id="editingAulaName" class="font-semibold"></span></p>
         </div>
 
-        <!-- Tabla de Aulas Existentes -->
-        <div class="bg-white p-6 rounded-xl shadow-lg">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Aulas Existentes</h2>
-            
-            <!-- Mensaje de estado de la lista -->
-            <div id="statusMessage" class="p-3 bg-blue-100 border-l-4 border-blue-500 text-blue-700 mb-4 view">
-                <p>Cargando lista de aulas...</p>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Nombre del Aula
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                                Nicks/IDEAs
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Acciones
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody id="aulasTableBody" class="bg-white divide-y divide-gray-200">
-                        <!-- Las filas de aulas se insertarán aquí por JavaScript -->
-                    </tbody>
-                </table>
-            </div>
+        <!-- Lista de Aulas Existentes -->
+        <h2 class="text-xl font-semibold text-gray-800 mb-3">Aulas Creadas</h2>
+        <div id="aulasList" class="space-y-4">
+            <p id="loadingStatus" class="text-sm text-indigo-600">Cargando aulas...</p>
         </div>
+
     </div>
 
-    <!-- Modal para Mensajes/Confirmación -->
-    <div id="messageModal" class="view fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
+    <!-- Modal para Mensajes -->
+    <div id="messageModal" class="view fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4">
             <h3 id="modalTitle" class="text-xl font-bold text-gray-900 mb-2">Título</h3>
             <p id="modalBody" class="text-gray-600 mb-4">Cuerpo del mensaje</p>
-            <div id="modalActions" class="flex justify-end space-x-3">
-                <button id="modalConfirmBtn" class="btn-danger py-2 px-4 rounded-lg font-medium hidden">Confirmar</button>
-                <button id="modalCloseBtn" class="btn-primary py-2 px-4 rounded-lg font-medium">Aceptar</button>
-            </div>
+            <button id="modalCloseBtn" class="btn-primary w-full py-2 rounded-lg font-medium">Aceptar</button>
         </div>
     </div>
 
     <!-- Loader Pantalla Completa -->
-    <div id="loader" class="view">
+    <div id="loader">
         <div class="flex flex-col items-center">
             <div class="spinner"></div>
-            <p class="text-white text-lg mt-3">Cargando...</p>
+            <p class="text-white text-lg mt-3">Procesando...</p>
         </div>
     </div>
-    
+
     <!-- Script de Firebase y Lógica -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, onAuthStateChanged, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, setDoc, doc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // =================================================================
-        // CONFIGURACIÓN OBTENIDA DEL ENTORNO DE EJECUCIÓN
+        // CONFIGURACIÓN: INCRUSTADA
         // =================================================================
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyCrZRRrK2pV8-qgbv4SkutKE2LSQFPJE-Q",
+            authDomain: "aulaia-393c0.firebaseapp.com",
+            projectId: "aulaia-393c0",
+            storageBucket: "aulaia-393c0.appspot.com",
+            messagingSenderId: "485029010497",
+            appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
+        };
+        const PROFESSOR_UID = "profesor123"; // ID fijo para el profesor en este entorno
+
         // =================================================================
         // ESTADO GLOBAL Y REFERENCIAS
         // =================================================================
-        let db;
-        let auth;
-        let userId = null;
-        let editingAulaId = null; // ID del aula que se está editando (null si se está creando)
-
-        // Banderas y temporizador para la corrección del cargador
-        let initialDataLoaded = false;
-        let watchdogTimer = null; 
+        let app, db, auth;
+        let userId = PROFESSOR_UID;
+        const appId = "aulaia-393c0"; // Usar el project ID de firebase como ID de la app
 
         // Referencias del DOM
-        const aulasTableBody = document.getElementById('aulasTableBody');
         const aulaForm = document.getElementById('aulaForm');
+        const aulaIdInput = document.getElementById('aulaId');
         const aulaNameInput = document.getElementById('aulaName');
-        const studentListInput = document.getElementById('studentList');
-        const saveButton = document.getElementById('saveButton');
-        const cancelEditButton = document.getElementById('cancelEditButton');
-        const editStatus = document.getElementById('editStatus');
-        const editingAulaName = document.getElementById('editingAulaName');
+        const alumnosNicksInput = document.getElementById('alumnosNicks');
+        const aulasListDiv = document.getElementById('aulasList');
+        const backBtn = document.getElementById('backBtn');
         const loader = document.getElementById('loader');
-        const statusMessage = document.getElementById('statusMessage');
-
-        // Referencias del Modal
-        const modal = document.getElementById('messageModal');
+        const messageModal = document.getElementById('messageModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalBody = document.getElementById('modalBody');
         const modalCloseBtn = document.getElementById('modalCloseBtn');
-        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
-        
+        const loadingStatus = document.getElementById('loadingStatus');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+
         // =================================================================
-        // FUNCIONES DE UTILIDAD Y UI
+        // FUNCIONES DE UI Y UTILIDAD
         // =================================================================
 
         /** Muestra/Oculta el cargador de pantalla completa. */
         function showLoader(show) {
-            loader.classList.toggle('active', show);
+            loader.style.display = show ? 'flex' : 'none';
         }
 
-        /** Muestra un modal de mensaje o confirmación. */
-        function showMessage(title, body, isConfirm = false, onConfirm = null) {
+        /** Muestra el modal de mensaje. */
+        function showMessage(title, body) {
             modalTitle.textContent = title;
             modalBody.textContent = body;
-            
-            modalConfirmBtn.onclick = null; // Limpiar listeners previos
-            modalConfirmBtn.classList.add('hidden');
-            modalCloseBtn.textContent = isConfirm ? 'Cancelar' : 'Aceptar';
-
-            if (isConfirm && onConfirm) {
-                modalConfirmBtn.classList.remove('hidden');
-                modalConfirmBtn.onclick = () => {
-                    modal.style.display = 'none';
-                    modal.classList.add('view');
-                    onConfirm();
-                };
-            }
-
-            modal.classList.remove('view');
-            modal.style.display = 'flex';
+            messageModal.classList.remove('view');
+            messageModal.style.display = 'flex';
         }
 
-        // Manejador del botón Cerrar/Aceptar del modal
         modalCloseBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-            modal.classList.add('view');
+            messageModal.style.display = 'none';
         });
 
-        /** * Renderiza la tabla de aulas.
-         * @param {Array<Object>} aulas Lista de aulas con id, name y studentList.
-         */
-        function renderAulasTable(aulas) {
-            aulasTableBody.innerHTML = ''; // Limpiar tabla
-            statusMessage.classList.add('view');
+        backBtn.addEventListener('click', () => {
+            showLoader(true);
+            window.location.href = 'index.html';
+        });
+
+        /** Limpia el formulario y lo pone en modo "crear" */
+        function resetForm() {
+            aulaIdInput.value = '';
+            aulaNameInput.value = '';
+            alumnosNicksInput.value = '';
+            document.getElementById('saveBtn').textContent = 'Guardar Aula';
+        }
+
+        /** Carga un aula en el formulario para editar */
+        function editAula(aula) {
+            aulaIdInput.value = aula.id;
+            aulaNameInput.value = aula.nombre;
+            alumnosNicksInput.value = aula.alumnos.join(', ');
+            document.getElementById('saveBtn').textContent = 'Actualizar Aula';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // =================================================================
+        // GESTIÓN DE FIREBASE Y CRUD
+        // =================================================================
+
+        /** Obtiene la referencia a la colección de Aulas Públicas */
+        function getAulasCollectionRef() {
+            return collection(db, `/artifacts/${appId}/public/data/aulas`);
+        }
+        
+        /** Renderiza la lista de aulas en el DOM */
+        function renderAulas(aulas) {
+            aulasListDiv.innerHTML = ''; // Limpiar lista
+            loadingStatus.style.display = 'none';
 
             if (aulas.length === 0) {
-                statusMessage.innerHTML = '<p class="text-gray-500">No hay aulas creadas. Usa el formulario de arriba para añadir la primera.</p>';
-                statusMessage.classList.remove('view');
+                aulasListDiv.innerHTML = '<p class="text-gray-500">Aún no has creado ninguna aula.</p>';
                 return;
             }
 
             aulas.forEach(aula => {
-                const row = document.createElement('tr');
-                row.classList.add('hover:bg-gray-100');
+                const aulaElement = document.createElement('div');
+                aulaElement.className = 'bg-white p-4 border border-gray-200 rounded-lg flex justify-between items-center shadow-sm';
                 
-                // Mapear la lista de alumnos y mostrar solo los primeros 3, más un contador si hay más
-                const listLength = aula.studentList.length;
-                let studentDisplay = '';
-                if (listLength > 0) {
-                    studentDisplay = aula.studentList.slice(0, 3).join(', ');
-                    if (listLength > 3) {
-                        studentDisplay += ` y ${listLength - 3} más...`;
-                    }
-                } else {
-                    studentDisplay = 'Ningún alumno';
-                }
-
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${aula.name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">${studentDisplay}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button class="text-indigo-600 hover:text-indigo-900 mr-4" data-aula-id="${aula.id}" data-action="edit">
-                            Editar
-                        </button>
-                        <button class="text-red-600 hover:text-red-900" data-aula-id="${aula.id}" data-action="delete">
-                            Eliminar
-                        </button>
-                    </td>
+                aulaElement.innerHTML = `
+                    <div>
+                        <p class="text-lg font-semibold text-gray-800">${aula.nombre} (<span class="text-sm font-mono text-gray-500">${aula.id}</span>)</p>
+                        <p class="text-sm text-gray-600 mt-1">Alumnos: ${aula.alumnos.length}</p>
+                        <p class="text-xs text-gray-400 mt-1 truncate max-w-xs">IDs: ${aula.alumnos.join(', ')}</p>
+                    </div>
+                    <div class="space-x-2 flex-shrink-0">
+                        <button data-id="${aula.id}" class="edit-btn px-3 py-1 text-sm rounded-md bg-yellow-500 text-white hover:bg-yellow-600">Editar</button>
+                        <button data-id="${aula.id}" class="delete-btn btn-delete px-3 py-1 text-sm rounded-md">Eliminar</button>
+                    </div>
                 `;
-                aulasTableBody.appendChild(row);
+                aulasListDiv.appendChild(aulaElement);
             });
-        }
 
-        /** Carga los datos de un aula en el formulario para su edición. */
-        async function loadAulaForEdit(aulaId) {
-            showLoader(true);
-            try {
-                // Ruta para obtener el documento
-                const docRef = doc(db, `artifacts/${appId}/public/data/aulas`, aulaId);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    
-                    // Llenar el formulario
-                    aulaNameInput.value = data.name;
-                    // studentList es un array; lo unimos con comas para el input
-                    studentListInput.value = data.studentList ? data.studentList.join(', ') : '';
-                    
-                    // Actualizar el estado de edición
-                    editingAulaId = aulaId;
-                    saveButton.textContent = 'Guardar Cambios';
-                    cancelEditButton.classList.remove('hidden');
-                    editStatus.classList.remove('hidden');
-                    editingAulaName.textContent = data.name;
-
-                } else {
-                    showMessage("Error", "El aula seleccionada no existe en la base de datos.");
-                }
-            } catch (error) {
-                console.error("Error al cargar aula para edición:", error);
-                showMessage("Error", "No se pudo cargar el aula. Detalles en la consola.");
-            } finally {
-                showLoader(false);
-            }
-        }
-
-        /** Maneja la eliminación de un aula. */
-        function deleteAula(aulaId) {
-            const aulaName = document.querySelector(`button[data-aula-id="${aulaId}"][data-action="edit"]`).closest('tr').querySelector('td').textContent;
-            
-            showMessage("Confirmar Eliminación", 
-                `¿Estás seguro de que quieres eliminar el aula "${aulaName}"? Esta acción no se puede deshacer.`, 
-                true, // Es un modal de confirmación
-                async () => { // Función onConfirm
-                    showLoader(true);
-                    try {
-                        const docRef = doc(db, `artifacts/${appId}/public/data/aulas`, aulaId);
-                        await deleteDoc(docRef);
-                        showMessage("Éxito", `Aula "${aulaName}" eliminada correctamente.`);
-                    } catch (error) {
-                        console.error("Error al eliminar aula:", error);
-                        showMessage("Error de Eliminación", "No se pudo eliminar el aula. Revisa tus permisos.");
-                    } finally {
-                        showLoader(false);
-                    }
-                }
-            );
-        }
-
-        /** Resetea el formulario al estado de creación. */
-        function resetForm() {
-            aulaForm.reset();
-            editingAulaId = null;
-            saveButton.textContent = 'Crear Aula';
-            cancelEditButton.classList.add('hidden');
-            editStatus.classList.add('hidden');
-        }
-
-        // =================================================================
-        // LÓGICA DE FIREBASE Y CRUD
-        // =================================================================
-
-        /** Establece el listener en tiempo real para las aulas. */
-        function setupAulasListener(db, appId) {
-            const publicAulasPath = `artifacts/${appId}/public/data/aulas`;
-            const aulasColRef = collection(db, publicAulasPath);
-            
-            // onSnapshot escucha los cambios en tiempo real
-            onSnapshot(aulasColRef, (snapshot) => {
-                // --- WATCHDOG CORRECCIÓN ---
-                initialDataLoaded = true;
-                clearTimeout(watchdogTimer);
-                // ---------------------------
-
-                const aulas = [];
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    aulas.push({
-                        id: doc.id,
-                        name: data.name,
-                        studentList: Array.isArray(data.studentList) ? data.studentList : [], 
-                    });
+            // Re-adjuntar listeners de botones
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.dataset.id;
+                    const aulaToEdit = aulas.find(a => a.id === id);
+                    if (aulaToEdit) editAula(aulaToEdit);
                 });
+            });
 
-                renderAulasTable(aulas);
-                showLoader(false);
-
-            }, (error) => {
-                // --- WATCHDOG CORRECCIÓN ---
-                initialDataLoaded = true;
-                clearTimeout(watchdogTimer);
-                // ---------------------------
-
-                console.error("Error al escuchar aulas:", error);
-                showMessage("Error de Carga", "No se pudieron cargar las aulas. Revisa las Reglas de Seguridad de Firebase.");
-                showLoader(false);
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (confirm('¿Estás seguro de que quieres eliminar esta aula?')) {
+                        deleteAula(e.target.dataset.id);
+                    }
+                });
             });
         }
-
-        /** Maneja el envío del formulario para crear o actualizar un aula. */
-        async function handleFormSubmit(e) {
-            e.preventDefault();
+        
+        /** Guarda o actualiza un aula */
+        async function saveAula(aulaData, aulaId) {
             showLoader(true);
-
-            const aulaName = aulaNameInput.value.trim();
-            // Limpiamos y normalizamos la lista de alumnos
-            const studentListRaw = studentListInput.value;
-            const studentList = studentListRaw
-                .split(',')
-                .map(nick => nick.trim())
-                .filter(nick => nick !== ''); // Quitar entradas vacías
-
-            const aulaData = {
-                name: aulaName,
-                studentList: studentList,
-                createdAt: new Date().toISOString(), // Usamos ISO String para ordenar si es necesario
-                createdBy: userId // Para cumplir con las reglas de seguridad
-            };
-
             try {
-                const aulasColRef = collection(db, `artifacts/${appId}/public/data/aulas`);
-                let docRef;
-
-                if (editingAulaId) {
-                    // Actualizar
-                    docRef = doc(aulasColRef, editingAulaId);
-                    await setDoc(docRef, aulaData, { merge: true }); // Usar setDoc con merge
-                    showMessage("Éxito", `El aula "${aulaName}" se ha actualizado correctamente.`);
-                } else {
-                    // Crear
-                    // El ID se genera automáticamente, pero para las aulas públicas, lo ideal es usar un ID predecible o dejar que Firestore lo genere.
-                    // Usaremos un ID generado por Firestore (addDoc). Para editar, se necesita el ID de doc.
-                    docRef = doc(aulasColRef); // Crea una referencia de documento con un ID automático
-                    await setDoc(docRef, aulaData); 
-                    showMessage("Éxito", `El aula "${aulaName}" se ha creado correctamente.`);
-                }
-                
-                resetForm(); // Limpiar el formulario después de guardar
-
+                const docRef = doc(getAulasCollectionRef(), aulaId || new Date().getTime().toString()); // Usa ID existente o timestamp
+                await setDoc(docRef, aulaData);
+                showMessage("Éxito", `Aula ${aulaData.nombre} guardada correctamente.`);
+                resetForm();
             } catch (error) {
                 console.error("Error al guardar aula:", error);
-                showMessage("Error al Guardar", "No se pudo guardar la información. Asegúrate de tener permisos de escritura. Detalles en consola.");
+                showMessage("Error de Guardado", `No se pudo guardar el aula: ${error.message}`);
             } finally {
                 showLoader(false);
             }
         }
 
+        /** Elimina un aula */
+        async function deleteAula(id) {
+            showLoader(true);
+            try {
+                const docRef = doc(getAulasCollectionRef(), id);
+                await deleteDoc(docRef);
+                showMessage("Eliminada", "Aula eliminada correctamente.");
+            } catch (error) {
+                console.error("Error al eliminar aula:", error);
+                showMessage("Error de Eliminación", `No se pudo eliminar el aula: ${error.message}`);
+            } finally {
+                showLoader(false);
+            }
+        }
+
+
         // =================================================================
-        // FUNCIÓN PRINCIPAL DE INICIALIZACIÓN
+        // LÓGICA DE FIREBASE Y CARGA INICIAL
         // =================================================================
 
         window.onload = async () => {
             showLoader(true);
-            
-            // --- WATCHDOG IMPLEMENTATION ---
-            // Si la carga inicial no se completa en 5 segundos, se fuerza un error.
-            watchdogTimer = setTimeout(() => {
-                if (!initialDataLoaded) {
-                    console.warn("Watchdog: La carga inicial tardó demasiado. Forzando cierre del cargador.");
-                    showMessage("Problema de Conexión", "La conexión con el servidor falló o tardó demasiado. Esto puede ser debido a restricciones de red. Por favor, revisa tu conexión.");
-                    showLoader(false);
-                }
-            }, 5000); // 5 segundos de espera máxima
-            // -------------------------------
-
-            // 1. Inicializar Firebase
             try {
-                if (Object.keys(firebaseConfig).length === 0) {
-                    throw new Error("Error: Configuración de Firebase ausente.");
-                }
-                const app = initializeApp(firebaseConfig);
+                // 1. Inicializar Firebase
+                app = initializeApp(FIREBASE_CONFIG);
                 db = getFirestore(app);
                 auth = getAuth(app);
-                setLogLevel('Debug');
+                
+                // 2. Autenticación Simulada (Necesario para el entorno Canvas/Firestore)
+                // Usamos un token de prueba (o anónimo) para obtener un objeto 'auth.currentUser'
+                await signInAnonymously(auth);
+                userIdDisplay.textContent = userId;
+
+                // 3. Listener en tiempo real para las Aulas (Colección Pública)
+                const aulasColRef = getAulasCollectionRef();
+                const q = query(aulasColRef);
+
+                onSnapshot(q, (snapshot) => {
+                    const aulas = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    renderAulas(aulas);
+                    showLoader(false);
+                }, (error) => {
+                    console.error("Error al escuchar aulas:", error);
+                    loadingStatus.textContent = 'Error al cargar aulas. Revisa la consola.';
+                    loadingStatus.classList.remove('text-indigo-600');
+                    loadingStatus.classList.add('text-red-600');
+                    showLoader(false);
+                });
+
             } catch (error) {
-                clearTimeout(watchdogTimer);
-                console.error("Error al inicializar Firebase:", error);
-                showMessage("Error de Configuración", error.message || "No se pudo conectar con la base de datos.");
-                showLoader(false);
-                return;
-            }
-
-            // 2. Autenticación del profesorado (con token custom)
-            try {
-                if (!initialAuthToken) {
-                    throw new Error("Token de autenticación de profesor ausente. Acceso denegado.");
-                }
-                const authResult = await signInWithCustomToken(auth, initialAuthToken);
-                userId = authResult.user.uid;
-                console.log("Autenticación de Profesor exitosa. User ID:", userId);
-
-                // 3. Establecer el listener de Aulas
-                setupAulasListener(db, appId);
-
-            } catch (error) {
-                clearTimeout(watchdogTimer);
-                console.error("Error de Autenticación:", error);
-                showMessage("Acceso Denegado", "No se pudo autenticarte como profesor. Asegúrate de que el token sea válido.");
+                console.error("Error FATAL de inicialización:", error);
+                showMessage("Error de Conexión", "No se pudo conectar a la base de datos. Recarga la página.");
+                loadingStatus.textContent = 'Error de conexión. Recarga la página.';
+                loadingStatus.classList.remove('text-indigo-600');
+                loadingStatus.classList.add('text-red-600');
                 showLoader(false);
             }
         };
 
         // =================================================================
-        // LISTENERS DE EVENTOS
+        // MANEJADOR DEL FORMULARIO
         // =================================================================
 
-        aulaForm.addEventListener('submit', handleFormSubmit);
+        aulaForm.addEventListener('submit', (e) => {
+            e.preventDefault();
 
-        cancelEditButton.addEventListener('click', resetForm);
+            const aulaId = aulaIdInput.value.trim() || null;
+            const aulaName = aulaNameInput.value.trim();
+            
+            // Limpia y normaliza la lista de alumnos
+            const alumnosString = alumnosNicksInput.value.trim();
+            const alumnosArray = alumnosString
+                .split(',')
+                .map(s => s.trim())
+                .filter(s => s.length > 0); // Filtra entradas vacías
 
-        // Delegación de eventos para los botones de la tabla
-        aulasTableBody.addEventListener('click', (e) => {
-            const button = e.target.closest('button');
-            if (!button) return;
-
-            const aulaId = button.dataset.aulaId;
-            const action = button.dataset.action;
-
-            if (action === 'edit') {
-                loadAulaForEdit(aulaId);
-            } else if (action === 'delete') {
-                deleteAula(aulaId);
+            if (alumnosArray.length === 0) {
+                showMessage("Error", "La lista de IDs/Nicks de Alumnos no puede estar vacía.");
+                return;
             }
-        });
 
+            const aulaData = {
+                nombre: aulaName,
+                alumnos: alumnosArray,
+                // Esto es solo un metadato, no se usa para seguridad
+                creadoPor: userId 
+            };
+
+            saveAula(aulaData, aulaId);
+        });
     </script>
 </body>
 </html>
