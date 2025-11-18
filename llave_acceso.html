@@ -11,58 +11,67 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
         .view { display: none; }
+        .card { max-width: 400px; }
+        .btn-primary { 
+            background-color: #4f46e5; color: white; transition: background-color 0.2s; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary:hover:not(:disabled) { background-color: #4338ca; }
+        .btn-back { color: #4f46e5; background-color: #eef2ff; transition: background-color 0.2s; }
+        .btn-back:hover:not(:disabled) { background-color: #e0e7ff; }
+        button:disabled { cursor: not-allowed; opacity: 0.6; }
+        
+        /* Estilos del Loader */
         #loader {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.6);
             display: flex; align-items: center; justify-content: center;
-            z-index: 9999; opacity: 0; visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 9999; display: none; /* Inicia oculto */
         }
-        #loader.active { opacity: 1; visibility: visible; }
         .spinner {
             border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
             border-top: 4px solid #ffffff; width: 40px; height: 40px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .card { max-width: 500px; }
-        .btn-primary {
-            background-color: #4f46e5; color: white; transition: background-color 0.2s;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-        }
-        .btn-primary:hover { background-color: #4338ca; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
-    <!-- Tarjeta Principal de Llave de Acceso -->
-    <div id="student-access" class="card bg-white p-8 rounded-xl shadow-2xl w-full">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Llave de Acceso AulaIA</h1>
-        <p class="text-gray-500 mb-6">Selecciona tu aula e introduce tu Nick/IDEA para empezar la actividad.</p>
+    <!-- Tarjeta de Acceso -->
+    <div class="card bg-white p-6 rounded-xl shadow-2xl w-full">
+        <button id="backBtn" class="btn-back px-3 py-1 rounded-full text-sm font-medium mb-4 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Volver
+        </button>
+        
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Acceso Alumnado</h1>
+        <p class="text-gray-500 mb-6">Selecciona tu aula e introduce tu identificación.</p>
 
-        <form id="accessForm">
-            <div class="mb-4">
-                <label for="aulaSelect" class="block text-sm font-medium text-gray-700 mb-1">Selecciona el Aula:</label>
-                <select id="aulaSelect" name="aulaSelect" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm bg-gray-50 disabled:bg-gray-200" required disabled>
-                    <option value="" disabled selected>Cargando Aulas...</option>
+        <form id="accessForm" class="space-y-4">
+            <div>
+                <label for="aulaSelect" class="block text-sm font-medium text-gray-700 mb-1">Selecciona tu Aula</label>
+                <select id="aulaSelect" name="aulaSelect" disabled class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                    <option value="" disabled selected>Cargando aulas...</option>
                 </select>
+                <p id="loadingStatus" class="mt-1 text-sm text-indigo-600">Conectando...</p>
             </div>
             
-            <div class="mb-6">
-                <label for="studentNick" class="block text-sm font-medium text-gray-700 mb-1">Introduce tu IDEA o Nick:</label>
-                <input type="text" id="studentNick" name="studentNick" placeholder="Ej: VFERJIM688" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+            <div>
+                <label for="studentNick" class="block text-sm font-medium text-gray-700 mb-1">Tu IDEA o Nick de Alumno</label>
+                <input type="text" id="studentNick" name="studentNick" placeholder="Ej: 12345678" disabled class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
             </div>
 
-            <button type="submit" class="btn-primary w-full py-3 rounded-xl text-lg font-semibold">
+            <button type="submit" id="submitBtn" disabled class="btn-primary w-full py-3 rounded-lg text-lg font-semibold">
                 Acceder a la Actividad
             </button>
         </form>
-        
-        <p class="text-xs text-gray-400 mt-6 text-center">Desarrollado para IES Los Carabelas.</p>
     </div>
 
     <!-- Modal para Mensajes -->
-    <div id="messageModal" class="view fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
+    <div id="messageModal" class="view fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4">
             <h3 id="modalTitle" class="text-xl font-bold text-gray-900 mb-2">Título</h3>
             <p id="modalBody" class="text-gray-600 mb-4">Cuerpo del mensaje</p>
@@ -71,230 +80,198 @@
     </div>
 
     <!-- Loader Pantalla Completa -->
-    <div id="loader" class="view">
+    <div id="loader">
         <div class="flex flex-col items-center">
             <div class="spinner"></div>
-            <p class="text-white text-lg mt-3">Cargando...</p>
+            <p class="text-white text-lg mt-3">Verificando acceso...</p>
         </div>
     </div>
 
     <!-- Script de Firebase y Lógica -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, onSnapshot, orderBy, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // =================================================================
-        // CONFIGURACIÓN OBTENIDA DEL ENTORNO DE EJECUCIÓN
+        // CONFIGURACIÓN: INCRUSTADA
         // =================================================================
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // URL de la actividad final (DEBE SER REEMPLAZADA POR TU URL REAL)
-        const ACTIVIDAD_APP_URL = "https://vferjim688-droid.github.io/AulaIA-actividad/actividad.html";
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyCrZRRrK2pV8-qgbv4SkutKE2LSQFPJE-Q",
+            authDomain: "aulaia-393c0.firebaseapp.com",
+            projectId: "aulaia-393c0",
+            storageBucket: "aulaia-393c0.appspot.com",
+            messagingSenderId: "485029010497",
+            appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
+        };
+        const ACTIVIDAD_APP_URL = "https://example.com/ruta-a-tu-actividad"; // URL de ejemplo
 
         // =================================================================
         // ESTADO GLOBAL Y REFERENCIAS
         // =================================================================
-        let db;
-        let auth;
-        let userId = null;
-        let initialDataLoaded = false; // Bandera para el Watchdog: true si onSnapshot ha respondido
-        let watchdogTimer = null;      // Referencia al temporizador de vigilancia
+        let app, db, auth;
 
+        // Referencias del DOM
         const aulaSelect = document.getElementById('aulaSelect');
-        const accessForm = document.getElementById('accessForm');
+        const studentNickInput = document.getElementById('studentNick');
+        const submitBtn = document.getElementById('submitBtn');
+        const backBtn = document.getElementById('backBtn');
         const loader = document.getElementById('loader');
-        const modal = document.getElementById('messageModal');
+        const messageModal = document.getElementById('messageModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalBody = document.getElementById('modalBody');
         const modalCloseBtn = document.getElementById('modalCloseBtn');
-        
+        const loadingStatus = document.getElementById('loadingStatus');
+
         // =================================================================
-        // FUNCIONES DE UI
+        // FUNCIONES DE UI Y UTILIDAD
         // =================================================================
 
         /** Muestra/Oculta el cargador de pantalla completa. */
         function showLoader(show) {
-            loader.classList.toggle('active', show);
+            loader.style.display = show ? 'flex' : 'none';
         }
 
         /** Muestra el modal de mensaje. */
         function showMessage(title, body) {
             modalTitle.textContent = title;
             modalBody.textContent = body;
-            modal.classList.remove('view');
-            modal.style.display = 'flex';
+            messageModal.classList.remove('view');
+            messageModal.style.display = 'flex';
         }
 
-        /** Actualiza el desplegable de aulas. */
-        function updateAulasDropdown(aulas) {
+        modalCloseBtn.addEventListener('click', () => {
+            messageModal.style.display = 'none';
+        });
+
+        backBtn.addEventListener('click', () => {
+            showLoader(true);
+            window.location.href = 'index.html';
+        });
+        
+        /** Habilita los campos del formulario */
+        function enableForm() {
+            aulaSelect.disabled = false;
+            studentNickInput.disabled = false;
+            submitBtn.disabled = false;
+            loadingStatus.textContent = 'Aulas cargadas correctamente.';
+            loadingStatus.classList.remove('text-indigo-600');
+            loadingStatus.classList.add('text-green-600');
+        }
+
+        /** Renderiza las opciones del selector con datos de alumnos incrustados. */
+        function renderAulas(aulas) {
             aulaSelect.innerHTML = '';
-            
             if (aulas.length === 0) {
-                aulaSelect.disabled = true;
-                aulaSelect.innerHTML = '<option value="" disabled selected>No hay aulas disponibles.</option>';
+                aulaSelect.innerHTML = '<option value="" disabled selected>No hay aulas activas.</option>';
+                loadingStatus.textContent = 'No se encontraron aulas activas.';
+                loadingStatus.classList.remove('text-indigo-600');
+                loadingStatus.classList.add('text-red-600');
                 return;
             }
 
-            // Opción por defecto
-            const defaultOption = document.createElement('option');
-            defaultOption.value = "";
-            defaultOption.textContent = "Selecciona un aula...";
-            defaultOption.disabled = true;
-            defaultOption.selected = true;
-            aulaSelect.appendChild(defaultOption);
-
-            // Opciones de aulas
             aulas.forEach(aula => {
                 const option = document.createElement('option');
                 option.value = aula.id;
-                option.textContent = aula.name;
-                // CRUCIAL: Guardamos la lista de alumnos en el dataset del option
-                option.dataset.studentList = JSON.stringify(aula.studentList);
+                option.textContent = aula.nombre;
+                // Guardamos la lista de alumnos como una cadena JSON en el dataset
+                option.dataset.studentList = JSON.stringify(aula.alumnos || []);
                 aulaSelect.appendChild(option);
             });
 
-            aulaSelect.disabled = false;
+            // Establecer el primer aula como seleccionada si no hay ninguna
+            if (aulaSelect.value === "") {
+                aulaSelect.selectedIndex = 0;
+            }
+            enableForm();
         }
 
         // =================================================================
-        // LÓGICA DE FIREBASE Y DATA
-        // =================================================================
-
-        /** Establece el listener en tiempo real para las aulas públicas. */
-        function setupAulasListener(db, appId) {
-            // La ruta de la colección pública es: /artifacts/{appId}/public/data/aulas
-            const publicAulasPath = `artifacts/${appId}/public/data/aulas`;
-            const aulasColRef = collection(db, publicAulasPath);
-            
-            // onSnapshot escucha los cambios en tiempo real
-            onSnapshot(aulasColRef, (snapshot) => {
-                // Marcar la carga inicial como exitosa y cancelar el watchdog
-                initialDataLoaded = true;
-                clearTimeout(watchdogTimer);
-                
-                const aulas = [];
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    aulas.push({
-                        id: doc.id,
-                        name: data.name,
-                        // Asegurarse de que studentList es un array, si no existe, es un array vacío
-                        studentList: Array.isArray(data.studentList) ? data.studentList : [], 
-                    });
-                });
-
-                // 4. Actualizar el DOM y finalizar la carga
-                updateAulasDropdown(aulas);
-                showLoader(false);
-
-            }, (error) => {
-                // Marcar la carga inicial como exitosa (para que el watchdog no salte, aunque haya error)
-                initialDataLoaded = true;
-                clearTimeout(watchdogTimer);
-                
-                console.error("Error al escuchar aulas:", error);
-                showMessage("Error de Carga", "No se pudieron cargar las aulas. Revisa la configuración de Firebase y las Reglas de Seguridad.");
-                showLoader(false);
-            });
-        }
-
-        // =================================================================
-        // FUNCIÓN PRINCIPAL DE INICIALIZACIÓN
+        // LÓGICA DE FIREBASE Y CARGA INICIAL
         // =================================================================
 
         window.onload = async () => {
             showLoader(true);
             
-            // Watchdog: Si la carga inicial no se completa en 5 segundos, se fuerza un error.
-            watchdogTimer = setTimeout(() => {
-                if (!initialDataLoaded) {
-                    console.warn("Watchdog: La carga inicial tardó demasiado. Forzando cierre del cargador.");
-                    showMessage("Problema de Conexión", "La conexión con el servidor falló o tardó demasiado. Esto puede ser debido a restricciones de red, permisos o un error de configuración. Inténtalo de nuevo.");
-                    showLoader(false);
-                }
-            }, 5000); // 5 segundos de espera máxima
-
-            // 1. Inicializar Firebase
             try {
-                if (Object.keys(firebaseConfig).length === 0) {
-                    throw new Error("Error: Configuración de Firebase ausente. El entorno de ejecución no ha proporcionado la configuración necesaria (vferjim688-droid.github.io).");
-                }
-                const app = initializeApp(firebaseConfig);
+                // 1. Inicializar Firebase
+                app = initializeApp(FIREBASE_CONFIG);
                 db = getFirestore(app);
                 auth = getAuth(app);
-                setLogLevel('Debug'); // Importante para depuración
+                
+                // 2. Autenticación anónima para permitir la lectura (según reglas de seguridad públicas)
+                await signInAnonymously(auth);
+
+                // 3. Listener en tiempo real para las Aulas (Colección Pública)
+                const appId = "aulaia-393c0"; // Usar el project ID de firebase como ID de la app
+                const aulasColRef = collection(db, `/artifacts/${appId}/public/data/aulas`);
+                const q = query(aulasColRef);
+
+                onSnapshot(q, (snapshot) => {
+                    const aulas = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    renderAulas(aulas);
+                    showLoader(false);
+                }, (error) => {
+                    console.error("Error al escuchar aulas:", error);
+                    loadingStatus.textContent = 'Error al cargar aulas. Revisa la consola.';
+                    loadingStatus.classList.remove('text-indigo-600');
+                    loadingStatus.classList.add('text-red-600');
+                    showLoader(false);
+                });
+
             } catch (error) {
-                clearTimeout(watchdogTimer);
-                console.error("Error al inicializar Firebase:", error);
-                showMessage("Error de Configuración", error.message || "No se pudo conectar con la base de datos. Revisa la consola para más detalles.");
-                showLoader(false);
-                return;
-            }
-
-            // 2. Autenticación Anónima
-            try {
-                // Se utiliza signInAnonymously para obtener credenciales de lectura para el alumno.
-                const authResult = await signInAnonymously(auth);
-                userId = authResult.user.uid;
-                console.log("Autenticación anónima exitosa. User ID:", userId);
-
-                // 3. Establecer el listener de Aulas Públicas
-                setupAulasListener(db, appId);
-
-            } catch (error) {
-                clearTimeout(watchdogTimer);
-                console.error("Error de Autenticación:", error);
-                showMessage("Error de Autenticación", "No se pudo verificar tu identidad. Revisa las Reglas de Seguridad de Firebase.");
+                console.error("Error FATAL de inicialización:", error);
+                showMessage("Error de Conexión", "No se pudo conectar a la base de datos. Inténtalo de nuevo.");
+                loadingStatus.textContent = 'Error de conexión. Inténtalo de nuevo.';
+                loadingStatus.classList.remove('text-indigo-600');
+                loadingStatus.classList.add('text-red-600');
                 showLoader(false);
             }
         };
 
         // =================================================================
-        // MANEJADOR DE EVENTOS
+        // MANEJADOR DEL FORMULARIO
         // =================================================================
 
-        modalCloseBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-            modal.classList.add('view');
-        });
-
-        accessForm.addEventListener('submit', (e) => {
+        document.getElementById('accessForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
-            const selectedAulaId = aulaSelect.value;
-            const studentNick = document.getElementById('studentNick').value.trim();
             const selectedOption = aulaSelect.options[aulaSelect.selectedIndex];
+            const selectedAulaId = aulaSelect.value;
+            const studentNick = studentNickInput.value.trim();
 
-            if (!selectedAulaId || selectedAulaId === "") {
-                showMessage("Error", "Por favor, selecciona un aula.");
+            if (!selectedAulaId) {
+                showMessage("Atención", "Por favor, selecciona un aula.");
                 return;
             }
 
             if (!studentNick) {
-                showMessage("Error", "Por favor, introduce tu IDEA o Nick.");
+                showMessage("Atención", "Por favor, introduce tu IDEA o Nick.");
                 return;
             }
 
             showLoader(true);
-            
             try {
-                // 1. Obtener la lista de alumnos (ya la tenemos en el 'dataset' del option)
-                const studentList = JSON.parse(selectedOption.dataset.studentList || '[]');
-
-                // 2. Comprobar si el nick está autorizado (comparación sin distinción de mayúsculas/minúsculas)
-                const isStudentAuthorized = studentList.some(nick => nick.toLowerCase() === studentNick.toLowerCase());
+                // 1. Obtener la lista de alumnos del dataset (evitando otra llamada a la DB)
+                const studentListString = selectedOption.dataset.studentList;
+                const studentList = JSON.parse(studentListString);
+                
+                // 2. Normalizar y validar el Nick
+                const isStudentAuthorized = studentList.some(nick => nick.toString().trim().toLowerCase() === studentNick.toLowerCase());
 
                 if (isStudentAuthorized) {
                     // 3. ¡Autorizado! Construir la URL y redirigir
-                    if (!ACTIVIDAD_APP_URL) {
-                         throw new Error("La URL de la aplicación de actividad (ACTIVIDAD_APP_URL) no está configurada.");
+                    if (!ACTIVIDAD_APP_URL || ACTIVIDAD_APP_URL.includes("example.com")) {
+                         showMessage("Advertencia", "URL de actividad no configurada. Edita el archivo para configurar ACTIVIDAD_APP_URL.");
+                         showLoader(false);
+                         return;
                     }
-                    // IMPORTANTE: Aseguramos que se añade el ID del aula y el Nick del alumno a la URL
+                    
                     const url = `${ACTIVIDAD_APP_URL}?aulaId=${selectedAulaId}&alumnoId=${encodeURIComponent(studentNick)}`;
-                    showMessage("Acceso Concedido", "Redirigiendo a tu actividad...");
+                    showMessage("Acceso Concedido", `Redirigiendo a tu actividad (${studentNick})...`);
                     setTimeout(() => { window.location.href = url; }, 1500);
 
                 } else {
@@ -306,10 +283,7 @@
                 console.error("Error en el login de alumno:", error);
                 showMessage("Acceso Denegado", error.message);
             } finally {
-                // Ocultar el cargador solo si no estamos a punto de redirigir
-                if (!window.location.href.includes(ACTIVIDAD_APP_URL)) {
-                    showLoader(false);
-                }
+                showLoader(false);
             }
         });
 
