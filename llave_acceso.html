@@ -53,7 +53,7 @@
             appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
         };
         
-        // CORRECCIÓN: URL REAL DE LA ACTIVIDAD DE TRABAJO
+        // URL FINAL DE LA ACTIVIDAD
         const ACTIVIDAD_URL = "https://vferjim688-droid.github.io/Actividad-de-Resumen/";
 
         const app = initializeApp(firebaseConfig);
@@ -64,10 +64,10 @@
         const accessBtn = document.getElementById('access-btn');
         const loader = document.getElementById('loader');
 
-        // Autenticación Anónima
+        // Autenticación Anónima para leer la DB
         loader.style.display = 'flex';
         signInAnonymously(auth).then(() => {
-            // CORRECCIÓN: Leemos de 'classrooms' (la colección correcta)
+            // CONEXIÓN A LA COLECCIÓN 'classrooms'
             const q = query(collection(db, `artifacts/aulaia-393c0/public/data/classrooms`));
             
             onSnapshot(q, (snap) => {
@@ -85,7 +85,7 @@
                         aulaSelect.appendChild(op);
                     });
                     
-                    // AUTO-SELECCIÓN: Si venimos de un enlace del profesor (?aulaId=XYZ)
+                    // AUTO-SELECCIÓN SI VIENE POR LINK (?aulaId=...)
                     const params = new URLSearchParams(window.location.search);
                     const preselectedId = params.get('aulaId');
                     if(preselectedId) {
@@ -116,7 +116,7 @@
                 const list = JSON.parse(aulaSelect.options[aulaSelect.selectedIndex].dataset.list);
                 // Validación insensible a mayúsculas
                 if(list.some(n => String(n).toLowerCase() === nick.toLowerCase())) {
-                    // Redirigimos a la ACTIVIDAD REAL con los parámetros correctos
+                    // Redirigimos a la ACTIVIDAD REAL
                     const finalUrl = `${ACTIVIDAD_URL}?aulaId=${aulaId}&alumnoId=${encodeURIComponent(nick)}`;
                     window.location.href = finalUrl;
                 } else {
