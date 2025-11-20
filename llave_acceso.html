@@ -53,7 +53,7 @@
             appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
         };
         
-        // URL_REAL DE LA ACTIVIDAD FINAL (Corregida)
+        // CORRECCIÓN: URL REAL DE LA ACTIVIDAD DE TRABAJO
         const ACTIVIDAD_URL = "https://vferjim688-droid.github.io/Actividad-de-Resumen/";
 
         const app = initializeApp(firebaseConfig);
@@ -116,7 +116,7 @@
                 const list = JSON.parse(aulaSelect.options[aulaSelect.selectedIndex].dataset.list);
                 // Validación insensible a mayúsculas
                 if(list.some(n => String(n).toLowerCase() === nick.toLowerCase())) {
-                    // Redirigimos a la ACTIVIDAD REAL
+                    // Redirigimos a la ACTIVIDAD REAL con los parámetros correctos
                     const finalUrl = `${ACTIVIDAD_URL}?aulaId=${aulaId}&alumnoId=${encodeURIComponent(nick)}`;
                     window.location.href = finalUrl;
                 } else {
