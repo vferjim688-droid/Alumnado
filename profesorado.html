@@ -3,50 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AulaIA - Profesorado</title>
+    <title>AulaIA - Acceso Profesorado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .view { display: none; }
+        .card { max-width: 600px; }
+        .btn-primary { background-color: #4f46e5; color: white; }
+        .btn-primary:hover { background-color: #4338ca; }
         #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 9999; }
         .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .view { display: none; }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4 flex items-center justify-center min-h-screen">
     
     <!-- LOGIN -->
-    <div id="login-view" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-2xl mt-10 text-center">
-        <h1 class="text-2xl font-bold mb-6">Acceso Profesorado</h1>
-        <button id="google-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">
-            Iniciar con Google (@g.educaand.es)
+    <div id="login-view" class="card bg-white p-8 rounded-xl shadow-2xl w-full">
+        <h1 class="text-2xl font-bold mb-6 text-center">Acceso Profesorado</h1>
+        <button id="google-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition mb-4">
+            Iniciar con Google
         </button>
-        <button onclick="window.location.href='index.html'" class="mt-4 text-sm text-gray-500">Volver</button>
+        <button onclick="window.location.href='index.html'" class="w-full text-center text-sm text-gray-500 hover:underline">Volver al Inicio</button>
     </div>
 
     <!-- PANEL DE GESTIÓN -->
-    <div id="app-view" class="view max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-lg mt-4">
+    <div id="app-view" class="view max-w-4xl w-full bg-white p-6 rounded-xl shadow-lg h-full self-start mt-8">
         <div class="flex justify-between items-center mb-6 border-b pb-4">
-            <h1 class="text-2xl font-bold text-gray-800">Mis Aulas</h1>
-            <div class="text-right">
-                <span id="user-email" class="block text-xs text-gray-500"></span>
-                <button id="logout-btn" class="text-sm text-red-500 font-bold">Salir</button>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Mis Aulas</h1>
+                <span id="user-email" class="text-xs text-gray-500"></span>
             </div>
+            <button id="logout-btn" class="text-sm text-red-500 font-bold px-3 py-1 border border-red-200 rounded hover:bg-red-50">Salir</button>
         </div>
 
         <!-- Formulario -->
-        <div class="bg-blue-50 p-4 rounded-lg mb-6">
-            <h3 class="font-bold text-blue-800 mb-2">Nueva Aula</h3>
-            <input id="aula-name" class="w-full p-2 mb-2 border rounded" placeholder="Nombre del Aula">
-            <textarea id="aula-students" class="w-full p-2 mb-2 border rounded" placeholder="Lista de alumnos (uno por línea o separados por coma)"></textarea>
-            <textarea id="aula-text" class="w-full p-2 mb-2 border rounded" placeholder="Texto/PDF para resumir"></textarea>
-            <button id="save-btn" class="bg-blue-600 text-white px-4 py-2 rounded font-bold">Crear Aula</button>
+        <div class="bg-blue-50 p-4 rounded-lg mb-6 border border-blue-100">
+            <h3 class="font-bold text-blue-800 mb-3">Crear Nueva Aula</h3>
+            <div class="grid gap-3">
+                <input id="aula-name" class="p-2 border rounded" placeholder="Nombre del Aula (ej. 1º Bach A)">
+                <textarea id="aula-students" class="p-2 border rounded" rows="2" placeholder="Lista de alumnos (uno por línea o separados por coma)"></textarea>
+                <textarea id="aula-text" class="p-2 border rounded" rows="2" placeholder="Texto del tema para resumir"></textarea>
+                <button id="save-btn" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">Crear Aula</button>
+            </div>
         </div>
 
         <!-- Lista -->
         <div id="aulas-list" class="space-y-3">
-            <p class="text-gray-500 text-center">Cargando...</p>
+            <p class="text-gray-500 text-center py-4">Cargando...</p>
         </div>
     </div>
 
@@ -57,7 +62,7 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- CONFIGURACIÓN REAL ---
+        // --- TU CONFIGURACIÓN ---
         const firebaseConfig = {
             apiKey: "AIzaSyCrZRRrK2pV8-qgbv4SkutKE2LSQFPJE-Q",
             authDomain: "aulaia-393c0.firebaseapp.com",
@@ -66,13 +71,14 @@
             messagingSenderId: "485029010497",
             appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
         };
-        const RESUMEN_URL = "https://vferjim688-droid.github.io/Actividad-de-Resumen/";
+        
+        // URL A LA QUE ENVIAMOS A LOS ALUMNOS (Tu portal de acceso)
+        const PORTAL_ALUMNOS = "https://vferjim688-droid.github.io/Alumnado/llave_acceso.html";
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         let currentUser = null;
-
         const loader = document.getElementById('loader');
         
         onAuthStateChanged(auth, (user) => {
@@ -92,6 +98,7 @@
         document.getElementById('google-btn').addEventListener('click', async () => {
             loader.style.display = 'flex';
             const provider = new GoogleAuthProvider();
+            // Eliminamos la restricción 'hd' para evitar confusiones si usas otra cuenta de prueba
             try {
                 await signInWithPopup(auth, provider);
             } catch (e) {
@@ -111,20 +118,25 @@
                 const list = document.getElementById('aulas-list');
                 list.innerHTML = '';
                 if (snap.empty) {
-                    list.innerHTML = '<p class="text-center text-gray-400">No tienes aulas creadas.</p>';
+                    list.innerHTML = '<p class="text-center text-gray-400 italic">No tienes aulas creadas.</p>';
                     return;
                 }
                 snap.forEach(d => {
                     const data = d.data();
+                    const linkAlumno = `${PORTAL_ALUMNOS}?aulaId=${d.id}`; // Enlace correcto a llave_acceso
+                    
                     const div = document.createElement('div');
-                    div.className = "bg-gray-50 p-4 rounded border flex justify-between items-center";
+                    div.className = "bg-white p-4 rounded-lg border shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4";
                     div.innerHTML = `
                         <div>
-                            <h4 class="font-bold text-lg">${data.name}</h4>
-                            <p class="text-xs text-gray-500">${data.studentList.length} alumnos</p>
-                            <a href="${RESUMEN_URL}?aulaId=${d.id}" target="_blank" class="text-blue-500 text-xs underline">Ver Link Alumno</a>
+                            <h4 class="font-bold text-lg text-gray-800">${data.name}</h4>
+                            <p class="text-xs text-gray-500 mb-2">${data.studentList.length} alumnos registrados</p>
+                            <a href="${linkAlumno}" target="_blank" class="text-blue-600 text-sm font-medium hover:underline flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                Link para Alumnos
+                            </a>
                         </div>
-                        <button onclick="borrar('${d.id}')" class="text-red-500 text-sm">Eliminar</button>
+                        <button onclick="borrar('${d.id}')" class="text-red-500 text-sm font-semibold border border-red-200 px-3 py-1 rounded hover:bg-red-50">Eliminar</button>
                     `;
                     list.appendChild(div);
                 });
@@ -133,31 +145,31 @@
 
         // Crear Aula
         document.getElementById('save-btn').addEventListener('click', async () => {
-            const name = document.getElementById('aula-name').value;
+            const name = document.getElementById('aula-name').value.trim();
             const students = document.getElementById('aula-students').value.split(/[\n,]+/).map(s=>s.trim()).filter(s=>s);
-            const text = document.getElementById('aula-text').value;
+            const text = document.getElementById('aula-text').value.trim();
 
-            if(!name || !students.length) return alert("Faltan datos");
+            if(!name || !students.length) return alert("Faltan datos: Nombre y Alumnos son obligatorios.");
             
             loader.style.display = 'flex';
             try {
                 await addDoc(collection(db, `artifacts/aulaia-393c0/public/data/classrooms`), {
                     name, studentList: students, sourceText: text, teacherId: currentUser.email, createdAt: serverTimestamp()
                 });
+                // Limpiar
                 document.getElementById('aula-name').value = '';
                 document.getElementById('aula-students').value = '';
                 document.getElementById('aula-text').value = '';
             } catch(e) {
                 console.error(e);
-                alert("Error guardando. Revisa permisos.");
+                alert("Error guardando: " + e.message);
             } finally {
                 loader.style.display = 'none';
             }
         });
 
-        // Borrar (Global scope hack for onclick)
         window.borrar = async (id) => {
-            if(confirm("¿Borrar aula?")) {
+            if(confirm("¿Borrar esta aula permanentemente?")) {
                 await deleteDoc(doc(db, `artifacts/aulaia-393c0/public/data/classrooms`, id));
             }
         };
