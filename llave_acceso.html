@@ -12,7 +12,7 @@
         .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .card { max-width: 500px; }
-        .btn-primary { background-color: #10b981; color: white; transition: 0.2s; }
+        .btn-primary { background-color: #10b981; color: white; }
         .btn-primary:hover:not(:disabled) { background-color: #059669; }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
@@ -20,20 +20,20 @@
 <body class="min-h-screen flex items-center justify-center p-4">
     <div class="card bg-white p-8 rounded-xl shadow-2xl w-full">
         <h1 class="text-3xl font-bold text-gray-800 mb-2 text-center">Acceso Alumnado</h1>
-        <p class="text-sm text-gray-500 mb-6 text-center">Selecciona tu aula.</p>
+        <p class="text-sm text-gray-500 mb-6 text-center">Selecciona tu aula e identifícate.</p>
 
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Aula:</label>
-                <select id="aula-select" class="w-full p-3 border rounded-lg" disabled><option>Cargando aulas...</option></select>
+                <select id="aula-select" class="w-full p-3 border rounded-lg bg-gray-50" disabled><option>Cargando aulas...</option></select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Tu Nick:</label>
                 <input type="text" id="student-nick" placeholder="Ej: Manolo" class="w-full p-3 border rounded-lg">
             </div>
-            <button id="access-btn" class="btn-primary w-full py-3 rounded-xl font-bold" disabled>Entrar</button>
+            <button id="access-btn" class="btn-primary w-full py-3 rounded-xl font-bold transition" disabled>Entrar</button>
         </div>
-        <button onclick="window.location.href='index.html'" class="w-full text-center mt-4 text-sm text-gray-500">Volver</button>
+        <button onclick="window.location.href='index.html'" class="w-full text-center mt-4 text-sm text-gray-500 hover:underline">Volver al Inicio</button>
     </div>
 
     <div id="loader"><div class="flex flex-col items-center"><div class="spinner"></div><p class="text-white mt-3">Conectando...</p></div></div>
@@ -43,7 +43,7 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- CONFIGURACIÓN REAL DE AULAIA ---
+        // --- TU CONFIGURACIÓN ---
         const firebaseConfig = {
             apiKey: "AIzaSyCrZRRrK2pV8-qgbv4SkutKE2LSQFPJE-Q",
             authDomain: "aulaia-393c0.firebaseapp.com",
@@ -52,6 +52,8 @@
             messagingSenderId: "485029010497",
             appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
         };
+        
+        // URL REAL DE LA ACTIVIDAD FINAL
         const ACTIVIDAD_URL = "https://vferjim688-droid.github.io/Actividad-de-Resumen/";
 
         const app = initializeApp(firebaseConfig);
@@ -62,49 +64,62 @@
         const accessBtn = document.getElementById('access-btn');
         const loader = document.getElementById('loader');
 
-        // Autenticación Anónima (para poder leer la DB)
+        // Autenticación Anónima
+        loader.style.display = 'flex';
         signInAnonymously(auth).then(() => {
-            // Cargar Aulas
             const q = query(collection(db, `artifacts/aulaia-393c0/public/data/classrooms`));
             onSnapshot(q, (snap) => {
                 aulaSelect.innerHTML = '<option value="" disabled selected>Selecciona...</option>';
                 if (snap.empty) {
                     aulaSelect.innerHTML = '<option>No hay aulas disponibles</option>';
-                    return;
+                } else {
+                    snap.forEach(doc => {
+                        const op = document.createElement('option');
+                        op.value = doc.id;
+                        op.text = doc.data().name;
+                        op.dataset.list = JSON.stringify(doc.data().studentList || []);
+                        aulaSelect.appendChild(op);
+                    });
+                    
+                    // AUTO-SELECCIÓN: Si venimos de un enlace del profesor (?aulaId=XYZ)
+                    const params = new URLSearchParams(window.location.search);
+                    const preselectedId = params.get('aulaId');
+                    if(preselectedId) {
+                        aulaSelect.value = preselectedId;
+                    }
                 }
-                snap.forEach(doc => {
-                    const op = document.createElement('option');
-                    op.value = doc.id;
-                    op.text = doc.data().name;
-                    op.dataset.list = JSON.stringify(doc.data().studentList || []);
-                    aulaSelect.appendChild(op);
-                });
                 aulaSelect.disabled = false;
                 accessBtn.disabled = false;
                 loader.style.display = 'none';
             }, (err) => {
                 console.error(err);
-                alert("Error cargando aulas. Revisa la consola.");
+                alert("Error cargando aulas.");
                 loader.style.display = 'none';
             });
         }).catch(e => {
             console.error(e);
-            alert("Error de conexión anónima.");
+            alert("Error de conexión.");
             loader.style.display = 'none';
         });
-
-        loader.style.display = 'flex';
 
         accessBtn.addEventListener('click', () => {
             const nick = document.getElementById('student-nick').value.trim();
             const aulaId = aulaSelect.value;
-            if(!nick || !aulaId) return alert("Faltan datos");
+            
+            if(!nick || !aulaId || aulaId === "") return alert("Selecciona un aula e introduce tu nick.");
 
-            const list = JSON.parse(aulaSelect.options[aulaSelect.selectedIndex].dataset.list);
-            if(list.some(n => n.toLowerCase() === nick.toLowerCase())) {
-                window.location.href = `${ACTIVIDAD_URL}?aulaId=${aulaId}&alumnoId=${encodeURIComponent(nick)}`;
-            } else {
-                alert("Tu nick no está en la lista de esta aula.");
+            try {
+                const list = JSON.parse(aulaSelect.options[aulaSelect.selectedIndex].dataset.list);
+                // Validación insensible a mayúsculas
+                if(list.some(n => n.toLowerCase() === nick.toLowerCase())) {
+                    // Redirigimos a la actividad con los datos
+                    window.location.href = `${ACTIVIDAD_URL}?aulaId=${aulaId}&alumnoId=${encodeURIComponent(nick)}`;
+                } else {
+                    alert("Tu nick no está autorizado en esta aula.");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Error validando acceso.");
             }
         });
     </script>
