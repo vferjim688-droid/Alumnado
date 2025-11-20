@@ -4,243 +4,109 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AulaIA - Llave de Acceso</title>
-    <!-- Carga de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Carga de la fuente Inter -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
-        .view { display: none; }
-        .card { max-width: 500px; }
-        #loader {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: none; align-items: center; justify-content: center;
-            z-index: 9999;
-        }
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3); border-radius: 50%;
-            border-top: 4px solid #ffffff; width: 40px; height: 40px;
-            animation: spin 1s linear infinite;
-        }
+        #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 9999; }
+        .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .btn-primary { 
-            background-color: #10b981; color: white; transition: background-color 0.2s; 
-            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);
-        }
-        .btn-primary:hover { background-color: #059669; }
-        .message-box { display: none; }
-        .message-box.active { display: block; }
+        .card { max-width: 500px; }
+        .btn-primary { background-color: #10b981; color: white; transition: 0.2s; }
+        .btn-primary:hover:not(:disabled) { background-color: #059669; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
-
-    <!-- Tarjeta Principal de Login -->
-    <div id="main-view" class="card bg-white p-8 rounded-xl shadow-2xl w-full">
+    <div class="card bg-white p-8 rounded-xl shadow-2xl w-full">
         <h1 class="text-3xl font-bold text-gray-800 mb-2 text-center">Acceso Alumnado</h1>
-        <p class="text-sm text-gray-500 mb-6 text-center">Introduce el Aula y tu ID/Nick para acceder a la actividad.</p>
+        <p class="text-sm text-gray-500 mb-6 text-center">Selecciona tu aula.</p>
 
-        <div id="login-form">
-            <!-- 1. Selección de Aula -->
-            <label for="aula-select" class="block text-sm font-medium text-gray-700 mb-2">Selecciona tu Aula:</label>
-            <select id="aula-select" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm disabled:bg-gray-100">
-                <option value="" disabled selected>Cargando aulas...</option>
-            </select>
-            
-            <!-- 2. Introducción de Nick/ID -->
-            <label for="student-nick" class="block text-sm font-medium text-gray-700 mb-2">Tu ID o Nick:</label>
-            <input type="text" id="student-nick" placeholder="Ej: P012345 o Manolo" class="w-full p-3 border border-gray-300 rounded-lg mb-6 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm disabled:bg-gray-100">
-
-            <!-- Botón de Acceso -->
-            <button id="access-btn" class="btn-primary w-full py-3 rounded-xl text-lg font-semibold disabled:opacity-50" disabled>
-                Acceder a la Actividad
-            </button>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Aula:</label>
+                <select id="aula-select" class="w-full p-3 border rounded-lg" disabled><option>Cargando aulas...</option></select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tu Nick:</label>
+                <input type="text" id="student-nick" placeholder="Ej: Manolo" class="w-full p-3 border rounded-lg">
+            </div>
+            <button id="access-btn" class="btn-primary w-full py-3 rounded-xl font-bold" disabled>Entrar</button>
         </div>
-        
-        <button onclick="window.location.href='index.html'" class="w-full text-center mt-4 text-sm text-gray-500 hover:text-gray-700 transition">
-            &larr; Volver al Inicio
-        </button>
+        <button onclick="window.location.href='index.html'" class="w-full text-center mt-4 text-sm text-gray-500">Volver</button>
     </div>
 
-    <!-- Message Box (Modal) -->
-    <div id="message-modal" class="message-box fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="message-title">
-        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center">
-            <h3 id="message-title" class="text-xl font-bold text-gray-900 mb-3"></h3>
-            <p id="message-text" class="text-gray-600 mb-6"></p>
-            <button onclick="document.getElementById('message-modal').classList.remove('active')" class="btn-primary py-2 px-6 rounded-lg text-sm">Cerrar</button>
-        </div>
-    </div>
+    <div id="loader"><div class="flex flex-col items-center"><div class="spinner"></div><p class="text-white mt-3">Conectando...</p></div></div>
 
-    <!-- Loader -->
-    <div id="loader">
-        <div class="flex flex-col items-center">
-            <div class="spinner"></div>
-            <p class="text-white text-lg mt-3">Cargando datos...</p>
-        </div>
-    </div>
-
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // ***************************************************************
-        // --- REEMPLAZA ESTO CON TU CONFIG DE FIREBASE REAL ---
-        // ***************************************************************
-        const firebaseConfig = {
-            apiKey: "TU_API_KEY",
-            authDomain: "TU_AUTH_DOMAIN",
-            projectId: "TU_PROJECT_ID",
-            storageBucket: "TU_STORAGE_BUCKET",
-            messagingSenderId: "TU_MESSAGING_SENDER_ID",
-            appId: "TU_APP_ID"
-        };
-        
-        // --- DEFINE AQUÍ LA URL DE LA ACTIVIDAD ---
-        const ACTIVIDAD_APP_URL = "https://vferjim688-droid.github.io/app-actividad-ia/";
-        // ***************************************************************
 
-        // Variables de la aplicación
-        let app, db, auth;
-        const appId = firebaseConfig.projectId; // Usamos el ProjectId como app ID
+        // --- CONFIGURACIÓN REAL DE AULAIA ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCrZRRrK2pV8-qgbv4SkutKE2LSQFPJE-Q",
+            authDomain: "aulaia-393c0.firebaseapp.com",
+            projectId: "aulaia-393c0",
+            storageBucket: "aulaia-393c0.appspot.com",
+            messagingSenderId: "485029010497",
+            appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
+        };
+        const ACTIVIDAD_URL = "https://vferjim688-droid.github.io/Actividad-de-Resumen/";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
         
-        // Elementos del DOM
         const aulaSelect = document.getElementById('aula-select');
-        const studentNickInput = document.getElementById('student-nick');
         const accessBtn = document.getElementById('access-btn');
         const loader = document.getElementById('loader');
-        const messageModal = document.getElementById('message-modal');
-        const messageTitle = document.getElementById('message-title');
-        const messageText = document.getElementById('message-text');
 
-        // Funciones de utilidad
-        function showLoader(show) {
-            loader.style.display = show ? 'flex' : 'none';
-        }
-
-        function showMessage(title, text) {
-            messageTitle.textContent = title;
-            messageText.textContent = text;
-            messageModal.classList.add('active');
-        }
-
-        // 1. Inicialización de Firebase
-        try {
-            // setLogLevel('Debug'); // Descomentar para ver logs de Firebase en consola
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-        } catch (error) {
-            console.error("Error al inicializar Firebase:", error);
-            showMessage("Error Crítico", "No se pudo conectar con el sistema. Revisa la consola y la configuración de Firebase.");
-            // Impedir cualquier operación posterior si la inicialización falla
-            accessBtn.disabled = true;
-        }
-
-        // 2. Autenticación Anónima (Necesaria para leer colecciones públicas)
-        async function authenticateAndLoad() {
-            showLoader(true);
-            try {
-                await signInAnonymously(auth);
-                // Si la autenticación anónima es exitosa, cargamos las aulas
-                loadAulas();
-            } catch (error) {
-                console.error("Error de autenticación anónima:", error);
-                showMessage("Error de Conexión", "No se pudo autenticar para cargar las aulas. Revisa las reglas de seguridad de Firebase.");
-                accessBtn.disabled = true;
-                showLoader(false);
-            }
-        }
-
-        // 3. Carga de Aulas en Tiempo Real
-        function loadAulas() {
-            const aulasCollectionRef = collection(db, `artifacts/${appId}/public/data/aulas`);
-            const q = query(aulasCollectionRef);
-
-            // onSnapshot proporciona actualizaciones en tiempo real
-            onSnapshot(q, (snapshot) => {
-                showLoader(false);
-                aulaSelect.innerHTML = '<option value="" disabled selected>Selecciona una aula...</option>';
-                
-                if (snapshot.empty) {
-                    showMessage("Atención", "No hay aulas disponibles. Contacta con tu profesor.");
-                    accessBtn.disabled = true;
+        // Autenticación Anónima (para poder leer la DB)
+        signInAnonymously(auth).then(() => {
+            // Cargar Aulas
+            const q = query(collection(db, `artifacts/aulaia-393c0/public/data/classrooms`));
+            onSnapshot(q, (snap) => {
+                aulaSelect.innerHTML = '<option value="" disabled selected>Selecciona...</option>';
+                if (snap.empty) {
+                    aulaSelect.innerHTML = '<option>No hay aulas disponibles</option>';
                     return;
                 }
-
-                snapshot.forEach(doc => {
-                    const aula = doc.data();
-                    const option = document.createElement('option');
-                    option.value = doc.id;
-                    option.textContent = aula.nombreAula || `Aula ID: ${doc.id}`;
-                    // Guardamos la lista de alumnos en el dataset del option para acceso rápido
-                    option.dataset.studentList = JSON.stringify(aula.alumnado || []); 
-                    aulaSelect.appendChild(option);
+                snap.forEach(doc => {
+                    const op = document.createElement('option');
+                    op.value = doc.id;
+                    op.text = doc.data().name;
+                    op.dataset.list = JSON.stringify(doc.data().studentList || []);
+                    aulaSelect.appendChild(op);
                 });
-                
-                // Habilitar los controles
-                accessBtn.disabled = false;
-                studentNickInput.disabled = false;
                 aulaSelect.disabled = false;
-            }, (error) => {
-                console.error("Error al escuchar las aulas:", error);
-                showMessage("Error de Datos", "No se pudieron cargar las aulas. Revisa tu conexión y reglas de Firebase.");
-                accessBtn.disabled = true;
-                showLoader(false);
+                accessBtn.disabled = false;
+                loader.style.display = 'none';
+            }, (err) => {
+                console.error(err);
+                alert("Error cargando aulas. Revisa la consola.");
+                loader.style.display = 'none';
             });
-        }
-
-        // 4. Lógica de Acceso (Validación)
-        accessBtn.addEventListener('click', async () => {
-            const selectedAulaId = aulaSelect.value;
-            const studentNick = studentNickInput.value.trim();
-            const selectedOption = aulaSelect.options[aulaSelect.selectedIndex];
-
-            if (!selectedAulaId) {
-                showMessage("Error", "Por favor, selecciona un Aula.");
-                return;
-            }
-            if (!studentNick) {
-                showMessage("Error", "Por favor, introduce tu ID o Nick.");
-                return;
-            }
-
-            showLoader(true);
-            try {
-                // 1. Obtener la lista de alumnos (ya la tenemos en el 'dataset' del option)
-                const studentList = JSON.parse(selectedOption.dataset.studentList);
-
-                // La validación debe ser insensible a mayúsculas/minúsculas
-                const isStudentAuthorized = studentList.some(nick => nick.toLowerCase() === studentNick.toLowerCase());
-
-                if (isStudentAuthorized) {
-                    // 2. ¡Autorizado! Construir la URL y redirigir
-                    if (!ACTIVIDAD_APP_URL) {
-                         throw new Error("La URL de la aplicación de actividad (ACTIVIDAD_APP_URL) no está configurada.");
-                    }
-                    const url = `${ACTIVIDAD_APP_URL}?aulaId=${selectedAulaId}&alumnoId=${encodeURIComponent(studentNick)}`;
-                    showMessage("Acceso Concedido", "Redirigiendo a tu actividad...");
-                    // Usar un pequeño retardo para que el usuario pueda leer el mensaje
-                    setTimeout(() => { window.location.href = url; }, 1500); 
-
-                } else {
-                    // 3. No autorizado
-                    throw new Error("Tu ID o Nick no está en la lista de esta aula. Contacta con tu profesor.");
-                }
-
-            } catch (error) {
-                console.error("Error en el login de alumno:", error);
-                showMessage("Acceso Denegado", error.message);
-            } finally {
-                // Si la redirección falla o hay error, ocultamos el loader
-                showLoader(false);
-            }
+        }).catch(e => {
+            console.error(e);
+            alert("Error de conexión anónima.");
+            loader.style.display = 'none';
         });
 
-        // Inicio de la aplicación
-        document.addEventListener('DOMContentLoaded', authenticateAndLoad);
+        loader.style.display = 'flex';
+
+        accessBtn.addEventListener('click', () => {
+            const nick = document.getElementById('student-nick').value.trim();
+            const aulaId = aulaSelect.value;
+            if(!nick || !aulaId) return alert("Faltan datos");
+
+            const list = JSON.parse(aulaSelect.options[aulaSelect.selectedIndex].dataset.list);
+            if(list.some(n => n.toLowerCase() === nick.toLowerCase())) {
+                window.location.href = `${ACTIVIDAD_URL}?aulaId=${aulaId}&alumnoId=${encodeURIComponent(nick)}`;
+            } else {
+                alert("Tu nick no está en la lista de esta aula.");
+            }
+        });
     </script>
 </body>
 </html>
