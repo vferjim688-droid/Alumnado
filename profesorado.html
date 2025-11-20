@@ -12,76 +12,115 @@
         .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .view { display: none; }
-        .ai-btn { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; border: 1px solid #e5e7eb; transition: 0.2s; background: white; }
-        .ai-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+        .ai-btn { 
+            font-size: 0.75rem; padding: 6px 12px; border-radius: 6px; 
+            border: 1px solid #e5e7eb; transition: all 0.2s; background: white; 
+            display: flex; align-items: center; gap: 6px; cursor: pointer;
+        }
+        .ai-btn:hover:not(:disabled) { background: #f3f4f6; border-color: #d1d5db; transform: translateY(-1px); }
+        .ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .ai-result-content { white-space: pre-wrap; line-height: 1.5; }
     </style>
 </head>
 <body class="p-4">
     
     <!-- LOGIN -->
     <div id="login-view" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-2xl mt-10 text-center">
-        <h1 class="text-2xl font-bold mb-6">Acceso Profesorado</h1>
-        <button id="google-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition mb-4">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">Acceso Profesorado</h1>
+        <button id="google-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition mb-4 flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>
             Iniciar con Google
         </button>
-        <button onclick="window.location.href='index.html'" class="mt-4 text-sm text-gray-500">Volver</button>
+        <button onclick="window.location.href='index.html'" class="mt-4 text-sm text-gray-500 hover:underline">Volver</button>
     </div>
 
     <!-- APP VIEW -->
-    <div id="app-view" class="view max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+    <div id="app-view" class="view max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
         
         <!-- Columna Izquierda: Editor -->
         <div class="lg:col-span-2 space-y-6">
             <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-600">
                 <div class="flex justify-between items-center mb-4">
                     <h2 id="form-title" class="text-xl font-bold text-gray-800">Crear Nueva Aula</h2>
-                    <button onclick="resetForm()" class="text-xs text-gray-400 underline">Limpiar</button>
+                    <button onclick="resetForm()" class="text-xs text-blue-600 hover:underline font-medium">Limpiar formulario</button>
                 </div>
                 
                 <input type="hidden" id="edit-id">
                 
-                <div class="space-y-4">
+                <div class="space-y-5">
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>
-                        <input id="aula-name" class="w-full p-2 border rounded" placeholder="Ej: Historia T1">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre del Aula</label>
+                        <input id="aula-name" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej: Historia T1 - Roma">
                     </div>
+                    
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Alumnos (IDs)</label>
-                        <textarea id="aula-students" class="w-full p-2 border rounded h-20 text-sm font-mono" placeholder="juan, maria, pedro... (separados por coma o línea)"></textarea>
+                        <textarea id="aula-students" class="w-full p-2 border border-gray-300 rounded h-24 text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none" placeholder="juan, maria, pedro... (separados por coma o línea)"></textarea>
+                        <p class="text-xs text-gray-400 mt-1">Introduce los Nicks que usarán los alumnos para acceder.</p>
                     </div>
+
                     <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Texto de Estudio</label>
-                        <textarea id="aula-text" class="w-full p-2 border rounded h-40 text-sm" placeholder="Pega aquí el texto..."></textarea>
+                        <textarea id="aula-text" class="w-full p-2 border border-gray-300 rounded h-48 text-sm focus:ring-2 focus:ring-blue-500 outline-none leading-relaxed" placeholder="Pega aquí el texto completo que los alumnos deben trabajar..."></textarea>
                         
                         <!-- Botonera IA -->
-                        <div class="mt-2 flex gap-2 flex-wrap">
-                            <button onclick="askGemini('concepts')" class="ai-btn text-indigo-600">🧠 Extraer Conceptos</button>
-                            <button onclick="askGemini('rubric')" class="ai-btn text-purple-600">📝 Generar Rúbrica</button>
-                            <button onclick="askGemini('feedback')" class="ai-btn text-green-600">💡 Sugerir Feedback</button>
+                        <div class="mt-3 bg-indigo-50 p-3 rounded-lg border border-indigo-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-bold text-indigo-800 flex items-center gap-1">
+                                    ✨ Asistente IA (Gemini)
+                                </span>
+                                <button onclick="clearApiKey()" class="text-[10px] text-indigo-400 underline hover:text-indigo-600" title="Borrar clave guardada">Configurar API Key</button>
+                            </div>
+                            <div class="flex gap-2 flex-wrap">
+                                <button onclick="askGemini('concepts')" class="ai-btn text-indigo-700 hover:bg-indigo-100">
+                                    <span>🧠</span> Extraer Conceptos
+                                </button>
+                                <button onclick="askGemini('rubric')" class="ai-btn text-purple-700 hover:bg-purple-100">
+                                    <span>📝</span> Generar Rúbrica
+                                </button>
+                                <button onclick="askGemini('feedback')" class="ai-btn text-green-700 hover:bg-green-100">
+                                    <span>💡</span> Sugerir Feedback
+                                </button>
+                            </div>
+                            
+                            <!-- Caja de Resultados IA -->
+                            <div id="ai-result" class="mt-3 hidden">
+                                <div class="bg-white p-3 rounded border border-indigo-200 text-sm text-gray-700 shadow-sm">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="text-xs font-bold text-indigo-500 uppercase">Respuesta de Gemini</span>
+                                        <button onclick="document.getElementById('ai-result').style.display='none'" class="text-gray-400 hover:text-gray-600">✕</button>
+                                    </div>
+                                    <div id="ai-content" class="ai-result-content"></div>
+                                </div>
+                            </div>
                         </div>
-                        <div id="ai-result" class="mt-2 p-3 bg-gray-50 border rounded text-sm text-gray-700 hidden"></div>
                     </div>
+
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Rúbrica</label>
-                        <textarea id="aula-rubric" class="w-full p-2 border rounded h-24 text-sm"></textarea>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Rúbrica de Evaluación</label>
+                        <textarea id="aula-rubric" class="w-full p-2 border border-gray-300 rounded h-32 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Define los criterios de evaluación..."></textarea>
                     </div>
                 </div>
 
-                <div class="mt-6 text-right">
-                    <button id="save-btn" class="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700 transition">Guardar Aula</button>
+                <div class="mt-8 pt-4 border-t border-gray-100 text-right">
+                    <button id="save-btn" class="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-bold hover:bg-blue-700 transition shadow-md">Guardar Aula</button>
                 </div>
             </div>
         </div>
 
         <!-- Columna Derecha: Lista -->
         <div class="lg:col-span-1">
-            <div class="bg-white p-6 rounded-xl shadow-lg sticky top-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-gray-800">Mis Aulas</h2>
-                    <button id="logout-btn" class="text-xs text-red-500 font-bold border border-red-100 px-2 py-1 rounded hover:bg-red-50">Salir</button>
+            <div class="bg-white p-6 rounded-xl shadow-lg sticky top-4 border-t-4 border-gray-600">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">Mis Aulas</h2>
+                        <p id="user-email" class="text-xs text-gray-500 truncate max-w-[150px]"></p>
+                    </div>
+                    <button id="logout-btn" class="text-xs text-red-600 font-bold border border-red-200 px-3 py-1.5 rounded hover:bg-red-50 transition">Cerrar Sesión</button>
                 </div>
-                <div id="aulas-list" class="space-y-3 max-h-[80vh] overflow-y-auto">
-                    <p class="text-center text-gray-400 text-sm">Cargando...</p>
+                
+                <div id="aulas-list" class="space-y-3 max-h-[80vh] overflow-y-auto pr-1">
+                    <p class="text-center text-gray-400 text-sm py-8">Cargando aulas...</p>
                 </div>
             </div>
         </div>
@@ -89,12 +128,25 @@
 
     <div id="loader"><div class="spinner"></div></div>
 
+    <!-- Modal para API Key -->
+    <div id="api-key-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[10000]">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full">
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Configurar Gemini API</h3>
+            <p class="text-sm text-gray-600 mb-4">Para usar las funciones de IA, necesitas una API Key de Google AI Studio.</p>
+            <input type="password" id="api-key-input" class="w-full p-2 border rounded mb-4" placeholder="Pega tu API Key aquí (AIzaSy...)">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeApiKeyModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
+                <button onclick="saveApiKey()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Guardar</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- CONFIGURACIÓN ---
+        // --- CONFIGURACIÓN FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyCrZRRrK2pV8-qgbv4SkutKE2LSQFPJE-Q",
             authDomain: "aulaia-393c0.firebaseapp.com",
@@ -103,21 +155,23 @@
             messagingSenderId: "485029010497",
             appId: "1:485029010497:web:1ebf3b0a80781d30307ac0"
         };
+        
+        // URL correcta para el portal de alumnos
         const PORTAL_ALUMNOS = "https://vferjim688-droid.github.io/Alumnado/llave_acceso.html";
-        const GEMINI_API_KEY = ""; // La clave se inyecta en runtime
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         let currentUser = null;
-        let currentAulas = []; // Para guardar los datos en memoria
+        let currentAulas = []; 
 
         const loader = document.getElementById('loader');
 
-        // Auth
+        // --- AUTHENTICATION ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
+                document.getElementById('user-email').textContent = user.email;
                 document.getElementById('login-view').style.display = 'none';
                 document.getElementById('app-view').style.display = 'grid';
                 loadAulas();
@@ -129,41 +183,46 @@
 
         document.getElementById('google-btn').addEventListener('click', async () => {
             const provider = new GoogleAuthProvider();
-            // provider.setCustomParameters({ 'hd': 'g.educaand.es' }); // Opcional
+            provider.setCustomParameters({ 'prompt': 'select_account' });
             try { await signInWithPopup(auth, provider); } catch (e) { alert(e.message); }
         });
+
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-        // Cargar Aulas
+        // --- GESTIÓN DE AULAS ---
         function loadAulas() {
+            // Consulta a la colección 'classrooms' filtrada por profesor
             const q = query(collection(db, `artifacts/aulaia-393c0/public/data/classrooms`), where("teacherId", "==", currentUser.email));
+            
             onSnapshot(q, (snap) => {
                 const list = document.getElementById('aulas-list');
                 list.innerHTML = '';
-                currentAulas = []; // Reset memoria
+                currentAulas = []; 
 
                 if (snap.empty) {
-                    list.innerHTML = '<p class="text-center text-gray-400 text-sm">No tienes aulas.</p>';
+                    list.innerHTML = '<p class="text-center text-gray-400 text-sm py-4">No tienes aulas creadas.</p>';
                     return;
                 }
 
                 snap.forEach(d => {
                     const data = d.data();
-                    // Guardamos en memoria para editar rápido
                     currentAulas.push({ id: d.id, ...data });
 
                     const div = document.createElement('div');
-                    div.className = "bg-white p-3 rounded border hover:shadow-md transition group";
+                    div.className = "bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition relative group";
                     div.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <h4 class="font-bold text-sm text-gray-800">${data.name}</h4>
-                            <span class="text-xs bg-gray-100 px-1 rounded">${data.studentList.length} alum</span>
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-bold text-gray-800 pr-6">${data.name}</h4>
+                            <span class="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">${data.studentList.length} alum</span>
                         </div>
-                        <div class="mt-3 flex justify-between items-center border-t pt-2">
-                            <a href="${PORTAL_ALUMNOS}?aulaId=${d.id}" target="_blank" class="text-blue-600 text-xs hover:underline">🔗 Link Alumno</a>
-                            <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                                <button onclick="editar('${d.id}')" class="text-gray-400 hover:text-blue-600">✏️</button>
-                                <button onclick="borrar('${d.id}')" class="text-gray-400 hover:text-red-600">🗑️</button>
+                        <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-50">
+                            <a href="${PORTAL_ALUMNOS}?aulaId=${d.id}" target="_blank" class="text-blue-600 text-xs font-bold hover:underline flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                                Link Alumnos
+                            </a>
+                            <div class="flex gap-2">
+                                <button onclick="editar('${d.id}')" class="text-gray-400 hover:text-blue-600 p-1 transition" title="Editar">✏️</button>
+                                <button onclick="borrar('${d.id}')" class="text-gray-400 hover:text-red-600 p-1 transition" title="Borrar">🗑️</button>
                             </div>
                         </div>
                     `;
@@ -172,15 +231,15 @@
             });
         }
 
-        // Guardar
+        // --- GUARDAR AULA ---
         document.getElementById('save-btn').addEventListener('click', async () => {
             const name = document.getElementById('aula-name').value.trim();
-            const students = document.getElementById('aula-students').value.split(/[\n,]+/).map(s=>s.trim()).filter(s=>s);
+            const students = document.getElementById('aula-students').value.split(/[\n,]+/).map(s=>s.trim()).filter(s=>s.length > 0);
             const text = document.getElementById('aula-text').value;
             const rubric = document.getElementById('aula-rubric').value;
             const editId = document.getElementById('edit-id').value;
 
-            if(!name || !students.length) return alert("Falta nombre o alumnos.");
+            if(!name || !students.length) return alert("Falta nombre o lista de alumnos.");
 
             loader.style.display = 'flex';
             const col = collection(db, `artifacts/aulaia-393c0/public/data/classrooms`);
@@ -206,37 +265,81 @@
             }
         });
 
-        // IA_Gemini
+        // --- INTELIGENCIA ARTIFICIAL (GEMINI) ---
+        
+        // Gestión de API Key en LocalStorage para facilidad de uso
+        window.clearApiKey = () => {
+            localStorage.removeItem('gemini_api_key');
+            alert("Clave API borrada. Se te pedirá de nuevo al usar la IA.");
+        }
+
+        function getApiKey() {
+            let key = localStorage.getItem('gemini_api_key');
+            // Si tienes una clave hardcodeada por defecto, úsala aquí si no hay en localstorage
+            // const DEFAULT_KEY = "PON_AQUI_TU_CLAVE_SI_QUIERES_FIJARLA";
+            // if (!key && DEFAULT_KEY) key = DEFAULT_KEY;
+            return key;
+        }
+
+        window.saveApiKey = () => {
+            const input = document.getElementById('api-key-input').value.trim();
+            if(input) {
+                localStorage.setItem('gemini_api_key', input);
+                document.getElementById('api-key-modal').classList.add('hidden');
+                // Re-intentar la última acción si fuera posible, por ahora solo cerramos
+                alert("Clave guardada. Vuelve a intentar la acción.");
+            }
+        };
+
+        window.closeApiKeyModal = () => document.getElementById('api-key-modal').classList.add('hidden');
+
         window.askGemini = async (type) => {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                document.getElementById('api-key-modal').classList.remove('hidden');
+                return;
+            }
+
             const text = document.getElementById('aula-text').value.trim();
-            if (!text) return alert("Pega el texto primero.");
+            if (!text) return alert("Por favor, pega primero el texto de estudio.");
             
             const resultBox = document.getElementById('ai-result');
+            const contentBox = document.getElementById('ai-content');
             resultBox.style.display = 'block';
-            resultBox.innerHTML = "✨ Pensando...";
+            contentBox.innerHTML = '<span class="animate-pulse text-indigo-600">✨ Consultando a Gemini...</span>';
             
             let prompt = "";
-            if (type === 'concepts') prompt = `Extrae 5 conceptos clave de este texto: "${text.substring(0,3000)}..."`;
-            if (type === 'rubric') prompt = `Crea una rúbrica breve (3 puntos) para evaluar un resumen de este texto: "${text.substring(0,3000)}..."`;
-            if (type === 'feedback') prompt = `Dame 2 ejemplos de feedback (técnico y motivacional) para un alumno sobre este texto: "${text.substring(0,3000)}..."`;
+            // Prompts refinados pedagógicamente
+            if (type === 'concepts') prompt = `Actúa como experto docente. Del siguiente texto, extrae los 5 conceptos clave fundamentales que un alumno debería comprender. Formato: Lista viñetada. Texto: "${text.substring(0,6000)}"`;
+            if (type === 'rubric') prompt = `Crea una rúbrica de evaluación sencilla (3 criterios) para evaluar un resumen de este texto. Formato: Criterio - Descripción. Texto: "${text.substring(0,6000)}"`;
+            if (type === 'feedback') prompt = `Genera dos ejemplos de feedback constructivo para un alumno sobre este contenido: 1) Feedback técnico (sobre precisión). 2) Feedback motivacional (growth mindset). Texto: "${text.substring(0,6000)}"`;
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                const data = await response.json();
-                const ans = data.candidates?.[0]?.content?.parts?.[0]?.text || "Error.";
                 
+                const data = await response.json();
+                
+                if (data.error) throw new Error(data.error.message);
+                
+                const ans = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sin respuesta.";
+                
+                // Si es rúbrica, rellenamos el campo también
                 if (type === 'rubric') document.getElementById('aula-rubric').value = ans;
-                resultBox.innerText = ans;
+                
+                contentBox.innerText = ans;
             } catch (e) {
-                resultBox.innerText = "Error IA: " + e.message;
+                contentBox.innerText = "Error IA: " + e.message;
+                if (e.message.includes('API key')) {
+                    window.clearApiKey(); // Borrar si es inválida
+                }
             }
         };
 
-        // Utilidades Globales
+        // --- UTILIDADES ---
         window.resetForm = () => {
             document.getElementById('aula-name').value = '';
             document.getElementById('aula-students').value = '';
@@ -257,10 +360,14 @@
             document.getElementById('aula-text').value = aula.sourceText || '';
             document.getElementById('aula-rubric').value = aula.rubric || '';
             document.getElementById('form-title').innerText = "Editando: " + aula.name;
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
         window.borrar = async (id) => {
-            if(confirm("¿Borrar?")) await deleteDoc(doc(db, `artifacts/aulaia-393c0/public/data/classrooms`, id));
+            if(confirm("¿Borrar aula permanentemente?")) {
+                await deleteDoc(doc(db, `artifacts/aulaia-393c0/public/data/classrooms`, id));
+            }
         };
     </script>
 </body>
